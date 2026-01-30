@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # OpenRouter Configuration
     openrouter_api_key: str = ""
-    openrouter_model: str = "anthropic/claude-3.5-sonnet"
+    openrouter_model: str = "moonshotai/kimi-k2.5"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # Slack Configuration

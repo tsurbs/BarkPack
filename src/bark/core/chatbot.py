@@ -1,6 +1,7 @@
 """Main ChatBot class that coordinates conversations."""
 
 from dataclasses import dataclass, field
+from typing import Any, AsyncGenerator
 
 from bark.core.config import Settings, get_settings
 from bark.core.openrouter import Message, OpenRouterClient
@@ -173,6 +174,42 @@ class ChatBot:
         conversation.add_assistant_message(content)
 
         return content
+
+    async def stream_chat(
+        self,
+        message: str,
+        conversation: Conversation | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """Send a message and get a streaming response.
+
+        Args:
+            message: The user's message
+            conversation: Optional conversation to continue. Creates new one if not provided.
+
+        Yields:
+            The assistant's response chunks
+        """
+        if not self._client:
+            raise RuntimeError("ChatBot not initialized. Use 'async with' context.")
+
+        # Create or use existing conversation
+        if conversation is None:
+            conversation = self.create_conversation()
+
+        # Inject current memories into system prompt
+        conversation.update_system_with_memories()
+
+        # Add user message
+        conversation.add_user_message(message)
+
+        # Get streaming response from OpenRouter
+        full_content = ""
+        async for chunk in self._client.stream_chat(conversation.get_messages()):
+            full_content += chunk
+            yield chunk
+
+        # Add response to conversation
+        conversation.add_assistant_message(full_content)
 
     async def simple_chat(self, message: str) -> str:
         """Send a single message without conversation history.

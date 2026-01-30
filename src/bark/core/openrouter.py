@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, AsyncGenerator
 
 import httpx
 
@@ -80,6 +80,7 @@ class OpenRouterClient:
             raise RuntimeError("Client not initialized. Use 'async with' context.")
 
         model = model or self.settings.openrouter_model
+        print("Using model: ", model)
         conversation = list(messages)  # Copy to avoid mutating input
 
         while True:
@@ -128,12 +129,16 @@ class OpenRouterClient:
 
                 tool = self.registry.get(tool_name)
                 if tool:
+                    print(f"\n[Tool Call] {tool_name}({args_str})")
                     try:
                         result = await tool.execute(**tool_args)
+                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''}")
                     except Exception as e:
                         result = f"Error executing tool: {e}"
+                        print(f"[Tool Error] {result}")
                 else:
                     result = f"Unknown tool: {tool_name}"
+                    print(f"[Tool Error] {result}")
 
                 # Add tool result to conversation
                 tool_msg = Message(
@@ -145,3 +150,125 @@ class OpenRouterClient:
                 conversation.append(tool_msg)
 
             # Continue loop to get final response
+
+    async def stream_chat(
+        self,
+        messages: list[Message],
+        model: str | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """Send a chat completion request with streaming and handle tool calls.
+
+        This method will automatically execute tool calls and continue
+        the conversation until a final response is received.
+        """
+        if not self._client:
+            raise RuntimeError("Client not initialized. Use 'async with' context.")
+
+        model = model or self.settings.openrouter_model
+        conversation = list(messages)  # Copy to avoid mutating input
+
+        while True:
+            # Build request payload
+            payload: dict[str, Any] = {
+                "model": model,
+                "messages": [m.to_dict() for m in conversation],
+                "stream": True,
+            }
+
+            # Add tools if available
+            tools = self.registry.to_openai_schema()
+            if tools:
+                payload["tools"] = tools
+                payload["tool_choice"] = "auto"
+
+            # Make request
+            full_content = ""
+            tool_calls: list[dict[str, Any]] = []
+
+            async with self._client.stream("POST", "/chat/completions", json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+
+                    data_str = line[6:]
+                    if data_str == "[DONE]":
+                        break
+
+                    try:
+                        data = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+
+                    if not data.get("choices"):
+                        continue
+
+                    delta = data["choices"][0].get("delta", {})
+
+                    # Handle content
+                    if "content" in delta and delta["content"]:
+                        content = delta["content"]
+                        full_content += content
+                        yield content
+
+                    # Handle tool calls
+                    if "tool_calls" in delta:
+                        for tool_call_delta in delta["tool_calls"]:
+                            index = tool_call_delta.get("index", 0)
+                            while len(tool_calls) <= index:
+                                tool_calls.append({"id": "", "type": "function", "function": {"name": "", "arguments": ""}})
+                            
+                            if "id" in tool_call_delta:
+                                tool_calls[index]["id"] += tool_call_delta["id"]
+                            if "function" in tool_call_delta:
+                                fn_delta = tool_call_delta["function"]
+                                if "name" in fn_delta:
+                                    tool_calls[index]["function"]["name"] += fn_delta["name"]
+                                if "arguments" in fn_delta:
+                                    tool_calls[index]["function"]["arguments"] += fn_delta["arguments"]
+
+            # After stream finishes, check if we had tool calls
+            if not tool_calls:
+                return  # Final response reached
+
+            # Handle tool calls
+            assistant_msg = Message(
+                role="assistant",
+                content=full_content if full_content else None,
+                tool_calls=tool_calls,
+            )
+            conversation.append(assistant_msg)
+
+            # Execute each tool call
+            for tool_call in tool_calls:
+                tool_name = tool_call["function"]["name"]
+                args_str = tool_call["function"].get("arguments", "{}") or "{}"
+                
+                try:
+                    tool_args = json.loads(args_str)
+                except json.JSONDecodeError:
+                    tool_args = {}
+
+                tool = self.registry.get(tool_name)
+                if tool:
+                    print(f"\n[Tool Call] {tool_name}({args_str})")
+                    try:
+                        result = await tool.execute(**tool_args)
+                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''}")
+                    except Exception as e:
+                        result = f"Error executing tool: {e}"
+                        print(f"[Tool Error] {result}")
+                else:
+                    result = f"Unknown tool: {tool_name}"
+                    print(f"[Tool Error] {result}")
+
+                # Add tool result to conversation
+                tool_msg = Message(
+                    role="tool",
+                    content=result,
+                    tool_call_id=tool_call["id"],
+                    name=tool_name,
+                )
+                conversation.append(tool_msg)
+
+            # Continue loop to get final response (or more tool calls)

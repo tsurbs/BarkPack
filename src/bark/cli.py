@@ -29,8 +29,10 @@ async def interactive_chat() -> None:
                 break
 
             try:
-                response = await bot.chat(user_input, conversation)
-                print(f"\nBark: {response}\n")
+                print("\nBark: ", end="", flush=True)
+                async for chunk in bot.stream_chat(user_input, conversation):
+                    print(chunk, end="", flush=True)
+                print("\n")
             except Exception as e:
                 print(f"\nError: {e}\n")
 

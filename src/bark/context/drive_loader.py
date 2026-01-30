@@ -217,8 +217,9 @@ class DriveLoader:
             escaped_query = query.replace("'", "\\'")
             
             # Search for files containing the query text or matching name
+            # Ignore self.folder_id for live search to be more useful
             search_query = f"(fullText contains '{escaped_query}' or name contains '{escaped_query}') and trashed = false"
-            
+
             # Add mime type filter for supported types
             mime_types = [
                 "application/vnd.google-apps.document",
@@ -226,29 +227,31 @@ class DriveLoader:
                 "application/vnd.google-apps.presentation",
                 "text/plain",
                 "text/markdown",
+                "application/pdf",
+                "application/vnd.google-apps.folder",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
             ]
             mime_query = " or ".join(f"mimeType = '{mt}'" for mt in mime_types)
             search_query += f" and ({mime_query})"
             
-            # Add folder filter if configured
-            if self.folder_id:
-                # Note: fullText search doesn't work well with parent filter
-                # so we'll filter results after fetching
-                pass
+            logger.info(f"Drive search query: {search_query}")
             
+            # Use corpora='allDrives' to search everything accessible, including shared drives
             response = service.files().list(
                 q=search_query,
-                spaces="drive",
-                fields="files(id, name, mimeType, modifiedTime, webViewLink)",
-                pageSize=max_results * 2,  # Get extra in case some fail
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True,
+                corpora="allDrives",
+                fields="files(id, name, mimeType, modifiedTime, webViewLink)",
+                pageSize=max_results * 2,
             ).execute()
             
             files = response.get("files", [])
-            logger.info(f"Drive search found {len(files)} files for query: {query}")
+            logger.info(f"Drive search found {len(files)} matches")
             
-            for file in files[:max_results]:
+            for file in files:
                 file_id = file["id"]
                 name = file.get("name", "Untitled")
                 mime_type = file.get("mimeType", "")
@@ -260,7 +263,9 @@ class DriveLoader:
                 # Fetch content preview
                 try:
                     content = ""
-                    if mime_type == "application/vnd.google-apps.document":
+                    if mime_type == "application/vnd.google-apps.folder":
+                        content = "(This is a folder. You can list its contents using other tools if available, or search for files inside it.)"
+                    elif mime_type == "application/vnd.google-apps.document":
                         content = self._export_gdoc(service, file_id)
                     elif mime_type == "application/vnd.google-apps.spreadsheet":
                         content = self._export_gsheet(service, file_id)
@@ -268,13 +273,16 @@ class DriveLoader:
                         content = self._export_gslide(service, file_id)
                     elif mime_type in ["text/plain", "text/markdown"]:
                         content = self._download_file(service, file_id)
+                    elif mime_type == "application/pdf":
+                        # For preview in search, we might want to skip heavy OCR or just get metadata
+                        content = "(PDF file - use indexing/memory tools for full content extract)"
                     
                     # Truncate content for preview
                     words = content.split()
                     preview = " ".join(words[:200]) + ("..." if len(words) > 200 else "")
                     
                     results.append({
-                        "title": name,
+                        "title": f"[FOLDER] {name}" if mime_type == "application/vnd.google-apps.folder" else name,
                         "url": file.get("webViewLink", ""),
                         "file_id": file_id,
                         "content": preview,
