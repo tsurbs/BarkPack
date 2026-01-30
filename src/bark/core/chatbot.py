@@ -9,19 +9,42 @@ from bark.core.tools import ToolRegistry, get_registry
 
 def _load_memories() -> str:
     """Load all memories and format them for context injection."""
+    parts = []
+    
+    # Load from new hierarchical memory system
+    try:
+        from bark.memory.memory_system import get_memory_system
+        memory = get_memory_system()
+        
+        # Always include core.md content
+        core_content = memory.get_core_content()
+        if core_content:
+            parts.append(core_content)
+        
+        # Add summary of memory structure
+        summary = memory.get_all_memories_summary()
+        if summary:
+            parts.append(summary)
+    except Exception:
+        pass
+    
+    # Also load legacy key-value memories for backwards compatibility
     try:
         from bark.tools.memory_tools import _load_memory
-        memory = _load_memory()
-        if not memory:
-            return ""
-        
-        lines = ["", "**Your stored memories:**"]
-        for key, value in memory.items():
-            lines.append(f"- {key}: {value}")
-        lines.append("")
-        return "\n".join(lines)
+        legacy_memory = _load_memory()
+        if legacy_memory:
+            lines = ["", "**Legacy memories:**"]
+            for key, value in legacy_memory.items():
+                lines.append(f"- {key}: {value}")
+            parts.append("\n".join(lines))
     except Exception:
+        pass
+    
+    if not parts:
         return ""
+    
+    return "\n\n".join(parts)
+
 
 
 @dataclass

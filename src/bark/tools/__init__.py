@@ -80,9 +80,103 @@ async def search_wiki(query: str) -> str:
 
 # Import memory tools to register them
 from bark.tools.memory_tools import (  # noqa: F401, E402
+    # New hierarchical memory tools
+    memory_search,
+    memory_grep,
+    memory_list,
+    memory_read,
+    memory_write,
+    memory_create_folder,
+    memory_move,
+    memory_delete,
+    # Legacy tools (backwards compatibility)
     read_memory,
     write_memory,
     delete_memory,
+    # Utility
     no_reply,
 )
+
+
+@tool(
+    name="save_to_memory",
+    description="""Save content from external sources (Drive, Notion, web) to memory.
+
+Use this to save important information discovered during searches to the appropriate committee folder.
+A summary will be extracted and stored as a memory file.
+
+Example usage:
+- After finding a budget doc in Drive: committee="finance", title="Q1 Budget 2025", content="...", source_url="..."
+- After finding meeting notes: committee="admin", title="Board Meeting Jan 2025", content="..."
+""",
+    parameters={
+        "type": "object",
+        "properties": {
+            "committee": {
+                "type": "string",
+                "description": "Committee folder (tech, labrador, design, events, outreach, finance, foundry, admin)",
+            },
+            "title": {
+                "type": "string",
+                "description": "Title for the memory (will be used as filename)",
+            },
+            "content": {
+                "type": "string",
+                "description": "Content to save (will be formatted with source info)",
+            },
+            "source_type": {
+                "type": "string",
+                "description": "Source type (drive, notion, wiki, web, other)",
+            },
+            "source_url": {
+                "type": "string",
+                "description": "Optional URL to the original source",
+            },
+        },
+        "required": ["committee", "title", "content"],
+    },
+)
+async def save_to_memory(
+    committee: str,
+    title: str,
+    content: str,
+    source_type: str = "other",
+    source_url: str | None = None,
+) -> str:
+    """Save external content to memory with source attribution."""
+    from bark.memory.memory_system import get_memory_system
+    from bark.memory.memory_embeddings import get_memory_embeddings
+    import logging
+    from datetime import datetime
+    
+    logger = logging.getLogger(__name__)
+    memory = get_memory_system()
+    
+    # Build memory content with metadata
+    lines = [f"# {title}", ""]
+    lines.append(f"*Saved: {datetime.now().strftime('%Y-%m-%d %H:%M')}*")
+    if source_type:
+        lines.append(f"*Source: {source_type}*")
+    if source_url:
+        lines.append(f"*URL: {source_url}*")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    lines.append(content)
+    
+    full_content = "\n".join(lines)
+    
+    try:
+        path = memory.write_file(committee, title, full_content)
+        
+        # Index for semantic search
+        try:
+            embeddings = get_memory_embeddings()
+            embeddings.index_file(path, full_content)
+        except Exception as e:
+            logger.warning(f"Could not index saved content: {e}")
+        
+        return f"✅ Saved to memory: **{path}**"
+    except (PermissionError, ValueError) as e:
+        return f"❌ Error: {e}"
 
