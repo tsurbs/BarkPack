@@ -1,6 +1,7 @@
 """OpenRouter API client for chat completions with tool support."""
 
 import json
+import time
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator
 
@@ -97,7 +98,10 @@ class OpenRouterClient:
                 payload["tool_choice"] = "auto"
 
             # Make request
+            start_time = time.time()
             response = await self._client.post("/chat/completions", json=payload)
+            duration = time.time() - start_time
+            print(f"[Debug] API request took {duration:.2f}s")
             response.raise_for_status()
             data = response.json()
 
@@ -130,12 +134,15 @@ class OpenRouterClient:
                 tool = self.registry.get(tool_name)
                 if tool:
                     print(f"\n[Tool Call] {tool_name}({args_str})")
+                    tool_start = time.time()
                     try:
                         result = await tool.execute(**tool_args)
-                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''}")
+                        tool_duration = time.time() - tool_start
+                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''} ({tool_duration:.2f}s)")
                     except Exception as e:
+                        tool_duration = time.time() - tool_start
                         result = f"Error executing tool: {e}"
-                        print(f"[Tool Error] {result}")
+                        print(f"[Tool Error] {result} ({tool_duration:.2f}s)")
                 else:
                     result = f"Unknown tool: {tool_name}"
                     print(f"[Tool Error] {result}")
@@ -185,7 +192,12 @@ class OpenRouterClient:
             full_content = ""
             tool_calls: list[dict[str, Any]] = []
 
+            start_time = time.time()
+            first_token_time = None
+
             async with self._client.stream("POST", "/chat/completions", json=payload) as response:
+                duration = time.time() - start_time
+                print(f"[Debug] Stream connection took {duration:.2f}s")
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     if not line.startswith("data: "):
@@ -207,6 +219,10 @@ class OpenRouterClient:
 
                     # Handle content
                     if "content" in delta and delta["content"]:
+                        if first_token_time is None:
+                            first_token_time = time.time()
+                            print(f"[Debug] Time to first token: {first_token_time - start_time:.2f}s")
+                        
                         content = delta["content"]
                         full_content += content
                         yield content
@@ -252,12 +268,15 @@ class OpenRouterClient:
                 tool = self.registry.get(tool_name)
                 if tool:
                     print(f"\n[Tool Call] {tool_name}({args_str})")
+                    tool_start = time.time()
                     try:
                         result = await tool.execute(**tool_args)
-                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''}")
+                        tool_duration = time.time() - tool_start
+                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''} ({tool_duration:.2f}s)")
                     except Exception as e:
+                        tool_duration = time.time() - tool_start
                         result = f"Error executing tool: {e}"
-                        print(f"[Tool Error] {result}")
+                        print(f"[Tool Error] {result} ({tool_duration:.2f}s)")
                 else:
                     result = f"Unknown tool: {tool_name}"
                     print(f"[Tool Error] {result}")

@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import time
 
 from bark.core import ChatBot
 
@@ -30,9 +31,12 @@ async def interactive_chat() -> None:
 
             try:
                 print("\nBark: ", end="", flush=True)
+                start_turn = time.time()
                 async for chunk in bot.stream_chat(user_input, conversation):
                     print(chunk, end="", flush=True)
-                print("\n")
+                
+                duration = time.time() - start_turn
+                print(f"\n[Turn Duration: {duration:.2f}s]\n")
             except Exception as e:
                 print(f"\nError: {e}\n")
 
