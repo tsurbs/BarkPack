@@ -158,7 +158,7 @@ async def memory_list(folder: str = "") -> str:
     try:
         items = memory.list_folder(folder)
     except ValueError as e:
-        return f"Error: {e}"
+        return f"Error: {e.with_traceback()}"
     
     if not items:
         if folder:
@@ -213,7 +213,7 @@ async def memory_read(path: str) -> str:
     except FileNotFoundError:
         return f"Memory file '{path}' not found."
     except ValueError as e:
-        return f"Error: {e}"
+        return f"Error: {e.with_traceback()}"
 
 
 @tool(

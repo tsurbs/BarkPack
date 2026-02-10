@@ -97,6 +97,60 @@ from bark.tools.memory_tools import (  # noqa: F401, E402
     no_reply,
 )
 
+# Import Google Workspace tools to register them
+from bark.tools.google_workspace_tools import (  # noqa: F401, E402
+    # Gmail
+    gmail_search,
+    gmail_read,
+    gmail_send,
+    gmail_list_labels,
+    # Calendar
+    calendar_list_events,
+    calendar_create_event,
+    calendar_list_calendars,
+    # Docs
+    docs_get,
+    docs_create,
+    # Drive (enhanced)
+    drive_list_files,
+    drive_create_folder,
+    drive_get_file_content,
+    # Drive Activity
+    drive_activity_query,
+    # Drive Labels
+    drive_labels_list,
+    # Sheets
+    sheets_read,
+    sheets_write,
+    # Forms
+    forms_get,
+    forms_list_responses,
+    # Chat
+    chat_list_spaces,
+    chat_send_message,
+    # Meet
+    meet_create_space,
+    meet_list_conference_records,
+    # Admin SDK
+    admin_list_users,
+    admin_list_groups,
+    # Apps Script
+    apps_script_list_projects,
+    apps_script_get_content,
+    # Postmaster
+    postmaster_list_domains,
+    postmaster_get_traffic_stats,
+    # Keep (stub)
+    keep_note,
+)
+
+# Import Firecrawl tools to register them
+from bark.tools.firecrawl_tools import (  # noqa: F401, E402
+    firecrawl_scrape,
+    firecrawl_crawl,
+    firecrawl_map,
+)
+
 
 @tool(
     name="save_to_memory",

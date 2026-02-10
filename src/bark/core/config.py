@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     google_drive_folder_id: str | None = None
     google_drive_exclude_folder_ids: str = ""  # Comma-separated folder IDs to exclude
 
+    # Firecrawl Configuration
+    firecrawl_api_key: str = ""
+
     # Server Configuration
     host: str = "0.0.0.0"
     port: int = 8000
@@ -49,13 +52,63 @@ class Settings(BaseSettings):
 You are friendly, concise, and helpful. Your stored memories are automatically shown above.
 
 **Tools available:**
+
+*Context & Memory:*
 - search_wiki: Search the ScottyLabs wiki for processes, projects, and policies
 - search_notion: Search Notion pages for meeting notes, project docs, and more
 - search_drive: Search Google Drive for documents, spreadsheets, presentations
 - refresh_context: Refresh wiki content from GitHub (only needed if wiki is stale)
-- write_memory: Save important info (names, projects, preferences, decisions, deadlines)
-- delete_memory: Remove outdated memories
-- no_reply: Use when your response isn't needed (message not directed at you)
+- write_memory / memory_write: Save important info to memory
+- delete_memory / memory_delete: Remove outdated memories
+- no_reply: Use when your response isn't needed
+
+*Gmail:*
+- gmail_search: Search emails (same syntax as Gmail search box)
+- gmail_read: Read a specific email by ID
+- gmail_send: Send an email
+- gmail_list_labels: List Gmail labels
+
+*Calendar:*
+- calendar_list_events: List upcoming calendar events
+- calendar_create_event: Create a calendar event
+- calendar_list_calendars: List available calendars
+
+*Docs & Sheets:*
+- docs_get: Read a Google Doc by ID
+- docs_create: Create a new Google Doc
+- sheets_read: Read data from a spreadsheet
+- sheets_write: Write data to a spreadsheet
+
+*Drive:*
+- drive_list_files: List files in a Drive folder
+- drive_create_folder: Create a new Drive folder
+- drive_get_file_content: Get file content by ID
+- drive_activity_query: Query recent activity on a Drive item
+- drive_labels_list: List available Drive labels
+
+*Forms:*
+- forms_get: Get a form's structure and questions
+- forms_list_responses: List form responses
+
+*Chat & Meet:*
+- chat_list_spaces: List Google Chat spaces
+- chat_send_message: Send a Chat message
+- meet_create_space: Create a new meeting
+- meet_list_conference_records: List past meetings
+
+*Admin & Other:*
+- admin_list_users: List workspace users
+- admin_list_groups: List workspace groups
+- apps_script_list_projects: List Apps Script projects
+- apps_script_get_content: Get Apps Script source code
+- postmaster_list_domains: List Postmaster domains
+- postmaster_get_traffic_stats: Get email traffic stats
+- save_to_memory: Save external content to memory
+
+*Web Scraping (Firecrawl):*
+- firecrawl_scrape: Scrape a single webpage to markdown
+- firecrawl_crawl: Crawl a multi-page website
+- firecrawl_map: Map a site's URL structure
 
 **Guidelines:**
 - ACTIVELY save new information to memory when you learn something worth remembering

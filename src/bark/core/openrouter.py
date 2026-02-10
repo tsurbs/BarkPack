@@ -1,5 +1,6 @@
 """OpenRouter API client for chat completions with tool support."""
 
+import asyncio
 import json
 import time
 from dataclasses import dataclass, field
@@ -96,6 +97,7 @@ class OpenRouterClient:
             if tools:
                 payload["tools"] = tools
                 payload["tool_choice"] = "auto"
+                payload["parallel_tool_calls"] = True
 
             # Make request
             start_time = time.time()
@@ -124,37 +126,32 @@ class OpenRouterClient:
             )
             conversation.append(assistant_msg)
 
-            # Execute each tool call
-            for tool_call in message["tool_calls"]:
-                tool_name = tool_call["function"]["name"]
-                # Handle empty/missing arguments (e.g., refresh_context with no params)
-                args_str = tool_call["function"].get("arguments", "{}") or "{}"
-                tool_args = json.loads(args_str)
-
-                tool = self.registry.get(tool_name)
-                if tool:
-                    print(f"\n[Tool Call] {tool_name}({args_str})")
-                    tool_start = time.time()
+            # Execute all tool calls in parallel
+            async def _run_tool(tc: dict[str, Any]) -> Message:
+                t_name = tc["function"]["name"]
+                a_str = tc["function"].get("arguments", "{}") or "{}"
+                t_args = json.loads(a_str)
+                t = self.registry.get(t_name)
+                if t:
+                    print(f"\n[Tool Call] {t_name}({a_str})")
+                    t_start = time.time()
                     try:
-                        result = await tool.execute(**tool_args)
-                        tool_duration = time.time() - tool_start
-                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''} ({tool_duration:.2f}s)")
+                        res = await t.execute(**t_args)
+                        dur = time.time() - t_start
+                        print(f"[Tool Result] {res[:200]}{'...' if len(res) > 200 else ''} ({dur:.2f}s)")
                     except Exception as e:
-                        tool_duration = time.time() - tool_start
-                        result = f"Error executing tool: {e}"
-                        print(f"[Tool Error] {result} ({tool_duration:.2f}s)")
+                        dur = time.time() - t_start
+                        res = f"Error executing tool: {e}"
+                        print(f"[Tool Error] {res} ({dur:.2f}s)")
                 else:
-                    result = f"Unknown tool: {tool_name}"
-                    print(f"[Tool Error] {result}")
+                    res = f"Unknown tool: {t_name}"
+                    print(f"[Tool Error] {res}")
+                return Message(role="tool", content=res, tool_call_id=tc["id"], name=t_name)
 
-                # Add tool result to conversation
-                tool_msg = Message(
-                    role="tool",
-                    content=result,
-                    tool_call_id=tool_call["id"],
-                    name=tool_name,
-                )
-                conversation.append(tool_msg)
+            tool_results = await asyncio.gather(
+                *[_run_tool(tc) for tc in message["tool_calls"]]
+            )
+            conversation.extend(tool_results)
 
             # Continue loop to get final response
 
@@ -187,6 +184,7 @@ class OpenRouterClient:
             if tools:
                 payload["tools"] = tools
                 payload["tool_choice"] = "auto"
+                payload["parallel_tool_calls"] = True
 
             # Make request
             full_content = ""
@@ -255,39 +253,34 @@ class OpenRouterClient:
             )
             conversation.append(assistant_msg)
 
-            # Execute each tool call
-            for tool_call in tool_calls:
-                tool_name = tool_call["function"]["name"]
-                args_str = tool_call["function"].get("arguments", "{}") or "{}"
-                
+            # Execute all tool calls in parallel
+            async def _run_tool(tc: dict[str, Any]) -> Message:
+                t_name = tc["function"]["name"]
+                a_str = tc["function"].get("arguments", "{}") or "{}"
                 try:
-                    tool_args = json.loads(args_str)
+                    t_args = json.loads(a_str)
                 except json.JSONDecodeError:
-                    tool_args = {}
-
-                tool = self.registry.get(tool_name)
-                if tool:
-                    print(f"\n[Tool Call] {tool_name}({args_str})")
-                    tool_start = time.time()
+                    t_args = {}
+                t = self.registry.get(t_name)
+                if t:
+                    print(f"\n[Tool Call] {t_name}({a_str})")
+                    t_start = time.time()
                     try:
-                        result = await tool.execute(**tool_args)
-                        tool_duration = time.time() - tool_start
-                        print(f"[Tool Result] {result[:200]}{'...' if len(result) > 200 else ''} ({tool_duration:.2f}s)")
+                        res = await t.execute(**t_args)
+                        dur = time.time() - t_start
+                        print(f"[Tool Result] {res[:200]}{'...' if len(res) > 200 else ''} ({dur:.2f}s)")
                     except Exception as e:
-                        tool_duration = time.time() - tool_start
-                        result = f"Error executing tool: {e}"
-                        print(f"[Tool Error] {result} ({tool_duration:.2f}s)")
+                        dur = time.time() - t_start
+                        res = f"Error executing tool: {e}"
+                        print(f"[Tool Error] {res} ({dur:.2f}s)")
                 else:
-                    result = f"Unknown tool: {tool_name}"
-                    print(f"[Tool Error] {result}")
+                    res = f"Unknown tool: {t_name}"
+                    print(f"[Tool Error] {res}")
+                return Message(role="tool", content=res, tool_call_id=tc["id"], name=t_name)
 
-                # Add tool result to conversation
-                tool_msg = Message(
-                    role="tool",
-                    content=result,
-                    tool_call_id=tool_call["id"],
-                    name=tool_name,
-                )
-                conversation.append(tool_msg)
+            tool_results = await asyncio.gather(
+                *[_run_tool(tc) for tc in tool_calls]
+            )
+            conversation.extend(tool_results)
 
             # Continue loop to get final response (or more tool calls)

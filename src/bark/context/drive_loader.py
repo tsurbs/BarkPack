@@ -19,8 +19,8 @@ from pdf2image import convert_from_bytes
 
 logger = logging.getLogger(__name__)
 
-# If modifying these scopes, delete the file token.json.
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+# Import scopes from the shared auth module
+from bark.context.google_auth import SCOPES
 
 
 @dataclass
@@ -524,7 +524,7 @@ class DriveLoader:
                 output.append("| " + " | ".join(row) + " |")
             
             output.append("\n")
-            
+
         return "\n".join(output)
 
     def _export_gslide(self, service: Any, file_id: str) -> str:

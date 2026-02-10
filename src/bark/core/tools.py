@@ -41,10 +41,15 @@ class FunctionTool(Tool):
         if self.func is None:
             return "Error: No function defined for this tool"
 
-        result = self.func(**kwargs)
-        # Handle async functions
-        if hasattr(result, "__await__"):
-            result = await result
+        import asyncio
+        import inspect
+
+        if inspect.iscoroutinefunction(self.func):
+            # Already async — await directly
+            result = await self.func(**kwargs)
+        else:
+            # Sync function — run in a thread so it doesn't block the event loop
+            result = await asyncio.to_thread(self.func, **kwargs)
 
         return str(result)
 
