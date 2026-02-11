@@ -151,6 +151,33 @@ from bark.tools.firecrawl_tools import (  # noqa: F401, E402
     firecrawl_map,
 )
 
+# Import document/spreadsheet tools to register them
+from bark.tools.document_tools import (  # noqa: F401, E402
+    # Spreadsheet metadata
+    sheets_get_metadata,
+    # Paginated reading
+    sheets_read_chunk,
+    # Search & filter
+    sheets_search,
+    sheets_filter_column,
+    # Column statistics
+    sheets_column_stats,
+    # Append
+    sheets_append,
+    # Create
+    sheets_create,
+    # Tab management
+    sheets_add_sheet,
+    # Clear
+    sheets_clear,
+    # Export
+    sheets_export_csv,
+    # Batch row access
+    sheets_get_rows,
+    # Large doc reading
+    docs_read_chunk,
+)
+
 
 @tool(
     name="save_to_memory",

@@ -45,9 +45,10 @@ def firecrawl_scrape(url: str) -> str:
     client = _get_firecrawl()
     result = client.scrape(url, formats=["markdown"])
 
-    markdown = result.get("markdown", "")
-    metadata = result.get("metadata", {})
-    title = metadata.get("title", url)
+    # v4 SDK returns a Document Pydantic model, use attribute access
+    markdown = result.markdown or ""
+    metadata = result.metadata
+    title = (metadata.title if metadata else None) or url
 
     if not markdown:
         return f"No content extracted from {url}"
@@ -90,16 +91,17 @@ def firecrawl_crawl(url: str, limit: int = 5) -> str:
         scrape_options={"formats": ["markdown"]},
     )
 
-    pages = result.get("data", [])
+    # v4 SDK returns a CrawlJob Pydantic model with .data list of Documents
+    pages = result.data or []
     if not pages:
         return f"No pages crawled from {url}"
 
     output = [f"Crawled {len(pages)} page(s) from {url}:\n"]
     for i, page in enumerate(pages, 1):
-        metadata = page.get("metadata", {})
-        title = metadata.get("title", f"Page {i}")
-        page_url = metadata.get("sourceURL", "?")
-        markdown = page.get("markdown", "(no content)")
+        metadata = page.metadata
+        title = (metadata.title if metadata else None) or f"Page {i}"
+        page_url = (metadata.source_url if metadata else None) or "?"
+        markdown = page.markdown or "(no content)"
 
         # Truncate individual pages
         if len(markdown) > 5000:
@@ -135,13 +137,14 @@ def firecrawl_map(url: str) -> str:
     client = _get_firecrawl()
     result = client.map(url)
 
-    links = result.get("links", [])
+    # v4 SDK returns a MapData Pydantic model with .links list of SearchResult
+    links = result.links or []
     if not links:
         return f"No pages found on {url}"
 
     output = [f"Found {len(links)} page(s) on {url}:\n"]
     for link in links[:50]:  # Cap output
-        output.append(f"- {link}")
+        output.append(f"- {link.url}")
 
     if len(links) > 50:
         output.append(f"\n...and {len(links) - 50} more")

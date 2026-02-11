@@ -1,5 +1,6 @@
 """Tool system for extending the chatbot's capabilities."""
 
+import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -30,6 +31,13 @@ class Tool(ABC):
         }
 
 
+# Global lock for sync tool calls — libraries like the Google API client and
+# httplib2/protobuf are NOT thread-safe, so parallel asyncio.to_thread calls
+# can corrupt memory.  This serializes sync tool execution while still
+# allowing truly async tools to run concurrently.
+_sync_tool_lock = threading.Lock()
+
+
 @dataclass
 class FunctionTool(Tool):
     """A tool that wraps a simple function."""
@@ -48,8 +56,13 @@ class FunctionTool(Tool):
             # Already async — await directly
             result = await self.func(**kwargs)
         else:
-            # Sync function — run in a thread so it doesn't block the event loop
-            result = await asyncio.to_thread(self.func, **kwargs)
+            # Sync function — run in a thread with a lock to prevent
+            # concurrent access to non-thread-safe libraries (e.g. Google API)
+            def _locked_call() -> Any:
+                with _sync_tool_lock:
+                    return self.func(**kwargs)  # type: ignore[misc]
+
+            result = await asyncio.to_thread(_locked_call)
 
         return str(result)
 

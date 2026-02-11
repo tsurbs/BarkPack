@@ -342,17 +342,115 @@ def docs_get(document_id: str) -> str:
     return f"# {title}\n\n{text}"
 
 
-def _extract_doc_text(body: dict) -> str:
-    """Extract plain text from a Google Docs body."""
-    parts = []
-    for element in body.get("content", []):
+def _extract_paragraph_text(paragraph: dict) -> str:
+    """Extract text from a single Google Docs paragraph element.
+
+    Handles hyperlinks by rendering them as Markdown links.
+    """
+    parts: list[str] = []
+    for pe in paragraph.get("elements", []):
+        text_run = pe.get("textRun")
+        if text_run:
+            content = text_run.get("content", "")
+            # Check for hyperlinks
+            text_style = text_run.get("textStyle", {})
+            link = text_style.get("link", {})
+            url = link.get("url", "")
+            if url and content.strip():
+                # Render as Markdown link — keep trailing whitespace outside
+                stripped = content.rstrip()
+                trailing = content[len(stripped):]
+                parts.append(f"[{stripped}]({url}){trailing}")
+            else:
+                parts.append(content)
+    return "".join(parts)
+
+
+def _extract_table_markdown(table: dict) -> str:
+    """Convert a Google Docs table element into a Markdown table."""
+    rows: list[list[str]] = []
+    for table_row in table.get("tableRows", []):
+        cells: list[str] = []
+        for cell in table_row.get("tableCells", []):
+            # Each cell contains its own content array (paragraphs, etc.)
+            cell_parts: list[str] = []
+            for element in cell.get("content", []):
+                paragraph = element.get("paragraph")
+                if paragraph:
+                    text = _extract_paragraph_text(paragraph).strip()
+                    if text:
+                        cell_parts.append(text)
+                # Nested tables are rare but possible — flatten to text
+                nested_table = element.get("table")
+                if nested_table:
+                    cell_parts.append(_extract_table_markdown(nested_table))
+            # Join multi-paragraph cells with " / " to keep them on one line
+            cells.append(" / ".join(cell_parts) if cell_parts else "")
+        rows.append(cells)
+
+    if not rows:
+        return ""
+
+    # Normalise column count
+    max_cols = max(len(r) for r in rows)
+    normalised = [r + [""] * (max_cols - len(r)) for r in rows]
+
+    # Escape pipes in cell content
+    def esc(s: str) -> str:
+        return s.replace("|", "\\|")
+
+    header = normalised[0]
+    lines = [
+        "| " + " | ".join(esc(c) for c in header) + " |",
+        "| " + " | ".join("---" for _ in header) + " |",
+    ]
+    for row in normalised[1:]:
+        lines.append("| " + " | ".join(esc(c) for c in row) + " |")
+
+    return "\n".join(lines)
+
+
+def _extract_doc_content(content: list[dict]) -> str:
+    """Recursively extract text and tables from a Google Docs content array.
+
+    Handles paragraphs, tables, table-of-contents, and section breaks.
+    Tables are rendered as Markdown tables.
+    """
+    parts: list[str] = []
+    for element in content:
+        # --- Paragraphs ---
         paragraph = element.get("paragraph")
         if paragraph:
-            for pe in paragraph.get("elements", []):
-                text_run = pe.get("textRun")
-                if text_run:
-                    parts.append(text_run.get("content", ""))
+            parts.append(_extract_paragraph_text(paragraph))
+            continue
+
+        # --- Tables ---
+        table = element.get("table")
+        if table:
+            md_table = _extract_table_markdown(table)
+            if md_table:
+                parts.append("\n" + md_table + "\n\n")
+            continue
+
+        # --- Table of contents ---
+        toc = element.get("tableOfContents")
+        if toc:
+            toc_content = toc.get("content", [])
+            if toc_content:
+                parts.append(_extract_doc_content(toc_content))
+            continue
+
+        # --- Section breaks (just add spacing) ---
+        if element.get("sectionBreak"):
+            parts.append("\n---\n\n")
+            continue
+
     return "".join(parts)
+
+
+def _extract_doc_text(body: dict) -> str:
+    """Extract text and tables from a Google Docs body as Markdown."""
+    return _extract_doc_content(body.get("content", []))
 
 
 @tool(
