@@ -1,3 +1,4 @@
+# Claude Code Server integration verified
 """FastAPI server for Bark integrations."""
 
 import json
