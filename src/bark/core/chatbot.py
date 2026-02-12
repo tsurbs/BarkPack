@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator
 
 from bark.core.config import Settings, get_settings
-from bark.core.openrouter import Message, OpenRouterClient
+from bark.core.openrouter import Message, OpenRouterClient, ToolCallCallback
 from bark.core.tools import ToolRegistry, get_registry
 
 
@@ -143,6 +143,7 @@ class ChatBot:
         self,
         message: str,
         conversation: Conversation | None = None,
+        on_tool_call: ToolCallCallback | None = None,
     ) -> str:
         """Send a message and get a response.
 
@@ -167,7 +168,9 @@ class ChatBot:
         conversation.add_user_message(message)
 
         # Get response from OpenRouter
-        response = await self._client.chat(conversation.get_messages())
+        response = await self._client.chat(
+            conversation.get_messages(), on_tool_call=on_tool_call
+        )
 
         # Add response to conversation
         content = response.content or ""

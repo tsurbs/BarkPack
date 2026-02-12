@@ -4,7 +4,11 @@ import asyncio
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Callable, Awaitable
+
+# Type alias for the tool-call notification callback.
+# Called with a list of (tool_name, arguments_json) tuples before execution.
+ToolCallCallback = Callable[[list[tuple[str, str]]], Awaitable[None]]
 
 import httpx
 
@@ -72,6 +76,7 @@ class OpenRouterClient:
         self,
         messages: list[Message],
         model: str | None = None,
+        on_tool_call: ToolCallCallback | None = None,
     ) -> Message:
         """Send a chat completion request and handle tool calls.
 
@@ -126,6 +131,17 @@ class OpenRouterClient:
             )
             conversation.append(assistant_msg)
 
+            # Notify caller about tool calls (for status messages)
+            if on_tool_call:
+                tool_info = [
+                    (tc["function"]["name"], tc["function"].get("arguments", "{}") or "{}")
+                    for tc in message["tool_calls"]
+                ]
+                try:
+                    await on_tool_call(tool_info)
+                except Exception:
+                    pass  # Don't let callback errors break tool execution
+
             # Execute all tool calls in parallel
             async def _run_tool(tc: dict[str, Any]) -> Message:
                 t_name = tc["function"]["name"]
@@ -159,6 +175,7 @@ class OpenRouterClient:
         self,
         messages: list[Message],
         model: str | None = None,
+        on_tool_call: ToolCallCallback | None = None,
     ) -> AsyncGenerator[str, None]:
         """Send a chat completion request with streaming and handle tool calls.
 
@@ -252,6 +269,17 @@ class OpenRouterClient:
                 tool_calls=tool_calls,
             )
             conversation.append(assistant_msg)
+
+            # Notify caller about tool calls (for status messages)
+            if on_tool_call:
+                tool_info = [
+                    (tc["function"]["name"], tc["function"].get("arguments", "{}") or "{}")
+                    for tc in tool_calls
+                ]
+                try:
+                    await on_tool_call(tool_info)
+                except Exception:
+                    pass
 
             # Execute all tool calls in parallel
             async def _run_tool(tc: dict[str, Any]) -> Message:

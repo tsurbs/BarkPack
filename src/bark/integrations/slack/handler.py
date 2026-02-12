@@ -234,8 +234,47 @@ class SlackEventHandler:
         message_with_identity = f"[From: {user_name}] {sanitized_text}"
 
         try:
+            # Build a callback that posts tool status to Slack
+            async def _notify_tool_calls(
+                tools: list[tuple[str, str]],
+            ) -> None:
+                """Post a status message when bark starts running tools."""
+                # Human-friendly names for tool categories
+                _TOOL_DESCRIPTIONS: dict[str, str] = {
+                    "code_agent": "🤖 Launching coding subagent…",
+                    "volume_download": "📥 Downloading file…",
+                    "volume_download_drive": "📥 Downloading from Google Drive…",
+                    "firecrawl_scrape": "🌐 Scraping webpage…",
+                    "firecrawl_crawl": "🌐 Crawling website…",
+                    "gmail_search": "📧 Searching emails…",
+                    "gmail_send": "📧 Sending email…",
+                    "calendar_create_event": "📅 Creating calendar event…",
+                    "refresh_context": "🔄 Refreshing wiki context…",
+                }
+                # Only post for tools that tend to be slow
+                status_parts: list[str] = []
+                for t_name, _ in tools:
+                    if t_name in _TOOL_DESCRIPTIONS:
+                        status_parts.append(_TOOL_DESCRIPTIONS[t_name])
+                    elif t_name == "shell_exec":
+                        status_parts.append("⚙️ Running shell command…")
+                if status_parts and self._client:
+                    status_msg = "\n".join(status_parts)
+                    try:
+                        await self._client.chat_postMessage(
+                            channel=channel,
+                            text=status_msg,
+                            thread_ts=thread_ts,
+                        )
+                    except Exception:
+                        pass  # Best-effort
+
             # Get response from chatbot
-            response = await self._chatbot.chat(message_with_identity, conversation)
+            response = await self._chatbot.chat(
+                message_with_identity,
+                conversation,
+                on_tool_call=_notify_tool_calls,
+            )
 
             # Check if bot decided not to reply
             if response.strip() == "__NO_REPLY__":
