@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request, Response
 from bark.core.config import get_settings
 from bark.integrations.slack.handler import SlackEventHandler
 from bark.integrations.slack.verification import verify_slack_signature_from_body
+from bark.interfaces.email.worker import EmailWorker
 
 # Import tools to register them
 import bark.tools  # noqa: F401
@@ -22,14 +23,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global handler instance
+# Global handler instances
 slack_handler: SlackEventHandler | None = None
+email_worker: EmailWorker | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global slack_handler
+    global slack_handler, email_worker
 
     settings = get_settings()
 
@@ -41,9 +43,29 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Slack integration not configured (missing credentials)")
 
+    # Initialize Email worker if enabled and Google credentials are available
+    if settings.email_enabled and (
+        settings.google_drive_credentials_json or settings.google_drive_credentials_file
+    ):
+        try:
+            email_worker = EmailWorker(settings=settings)
+            await email_worker.start()
+            logger.info(
+                "Email interface initialized — polling %s every %ds",
+                settings.email_target_address,
+                settings.email_poll_interval,
+            )
+        except Exception:
+            logger.exception("Failed to start email worker")
+            email_worker = None
+    else:
+        logger.info("Email interface not enabled or Google credentials not configured")
+
     yield
 
     # Cleanup
+    if email_worker:
+        await email_worker.stop()
     if slack_handler:
         await slack_handler.__aexit__(None, None, None)
 

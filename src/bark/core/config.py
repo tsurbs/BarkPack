@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     claude_code_server_url: str = ""
     claude_code_auth_token: str = ""
 
+    # Email Interface Configuration
+    email_target_address: str = "ops+bark@scottylabs.org"
+    email_poll_interval: int = 60  # seconds between Gmail poll cycles
+    email_enabled: bool = True  # set to False to disable the email worker
+
     # Server Configuration
     host: str = "0.0.0.0"
     port: int = 8000
