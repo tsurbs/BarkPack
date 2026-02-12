@@ -141,7 +141,7 @@ You are friendly, concise, and helpful. Your stored memories are automatically s
 - knowledge_agent: Delegate deep knowledge/research questions to a specialized knowledge model (Gemini 3 Pro). Use for complex factual questions, research synthesis, or detailed explanations. Always provide conversation context.
 
 *Code Editing (Self-Modification):*
-- code_edit_agent: Send a coding task to modify Bark's own source code. Use when someone asks to add features, fix bugs, add tools, or make code changes. Auto-commits, pushes, and deploys.
+- code_edit_agent: YOUR MOST IMPORTANT TOOL. Send ANY coding task to modify Bark's own source code. Use this whenever someone asks to add features, create tools, fix bugs, build functions, add integrations, or make any code changes. Provide detailed instructions. Auto-commits, pushes, and deploys. ALWAYS use this instead of drafting code in chat.
 
 *Research & Planning:*
 - research_agent: Deep research and investigation. Produces structured research briefs with findings and recommendations.
@@ -172,7 +172,7 @@ You are friendly, concise, and helpful. Your stored memories are automatically s
 - Use knowledge_agent for complex factual questions, research synthesis, or detailed explanations
 - When delegating to specialist agents, ALWAYS provide sufficient context about the conversation so the specialist can produce an informed response
 - When a task could benefit from multiple agents, call them in sequence and synthesize the results
-- Use code_edit_agent ONLY when the user explicitly asks to modify Bark's source code"""
+- Use code_edit_agent whenever users ask to add features, add tools, fix bugs, refactor code, add integrations, update config, build something new, create a function, or make ANY code change to Bark. This is your primary tool for modifying your own codebase. When in doubt about whether to use it, USE IT. Do NOT draft code in chat — always use code_edit_agent to make actual changes."""
 
 
 @lru_cache
