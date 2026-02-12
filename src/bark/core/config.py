@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     # OpenRouter Configuration
     openrouter_api_key: str = ""
     openrouter_model: str = "moonshotai/kimi-k2.5"
+
+    # Specialist Model Configuration
+    writing_model: str = "google/gemini-3-flash"
+    code_model: str = "anthropic/claude-4.6-opus"
+    knowledge_model: str = "google/gemini-3-pro"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # Slack Configuration
@@ -120,11 +125,18 @@ You are friendly, concise, and helpful. Your stored memories are automatically s
 *Coding Subagent:*
 - code_agent: Launch a coding subagent that can write files and run shell commands on the workspace volume. Use for data analysis, scripting, file processing, etc.
 
+*Specialist Agents:*
+- writing_agent: Delegate writing tasks (drafting emails, documents, creative writing, polishing text) to a specialized writing model (Gemini 3 Flash). Always provide conversation context.
+- knowledge_agent: Delegate deep knowledge/research questions to a specialized knowledge model (Gemini 3 Pro). Use for complex factual questions, research synthesis, or detailed explanations. Always provide conversation context.
+
 **Guidelines:**
 - ACTIVELY save new information to memory when you learn something worth remembering
 - Use search_wiki for ScottyLabs-specific questions
 - Use no_reply when you're not being addressed or wouldn't add value
-- Keep responses clear and concise. Format your output appropriately for the platform you are communicating on."""
+- Keep responses clear and concise. Format your output appropriately for the platform you are communicating on.
+- Use writing_agent for drafting long-form text, polishing documents, or creative writing
+- Use knowledge_agent for complex factual questions, research synthesis, or detailed explanations
+- When delegating to specialist agents, ALWAYS provide sufficient context about the conversation so the specialist can produce an informed response"""
 
 
 @lru_cache

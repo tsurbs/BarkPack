@@ -207,7 +207,7 @@ async def _run_subagent(task: str, model: str | None = None) -> str:
     Returns the subagent's final text response.
     """
     settings = get_settings()
-    model = model or settings.openrouter_model
+    model = model or settings.code_model
 
     # Ensure volume exists
     Path(VOLUME_PATH).mkdir(parents=True, exist_ok=True)

@@ -192,6 +192,12 @@ from bark.tools.code_tools import (  # noqa: F401, E402
     code_agent,
 )
 
+# Import specialist delegation tools to register them
+from bark.tools.specialist_tools import (  # noqa: F401, E402
+    writing_agent,
+    knowledge_agent,
+)
+
 
 @tool(
     name="save_to_memory",

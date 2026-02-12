@@ -36,6 +36,8 @@ class SlackEventHandler:
     _processed_events: set[str] = field(default_factory=set)
     _bot_threads: set[tuple[str, str]] = field(default_factory=set)
     _user_names: dict[str, str] = field(default_factory=dict)  # Cache user ID -> display name
+    _conversation_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
+    _active_tools: dict[str, str] = field(default_factory=dict)  # conv key -> tool description
 
     async def __aenter__(self) -> "SlackEventHandler":
         """Enter async context."""
@@ -213,11 +215,56 @@ class SlackEventHandler:
         thread_ts: str,
         message_ts: str = "",
     ) -> None:
-        """Process a message and send a response."""
+        """Process a message and send a response.
+
+        Uses a per-conversation lock to prevent concurrent mutation of the
+        shared Conversation object.  If another request is already in-flight
+        for this thread, we post an immediate status message so the user
+        knows we're busy, then queue behind the lock.
+        """
         if not self._chatbot or not self._client:
             logger.error("Handler not properly initialized")
             return
 
+        conv_key = self._get_conversation_key(channel, thread_ts)
+
+        # Get or create lock for this conversation
+        if conv_key not in self._conversation_locks:
+            self._conversation_locks[conv_key] = asyncio.Lock()
+        lock = self._conversation_locks[conv_key]
+
+        # If the lock is already held, post a status message and queue
+        if lock.locked():
+            active = self._active_tools.get(conv_key)
+            if active:
+                status = f"⏳ I'm currently working on *{active}* — I'll get to your message as soon as I'm done."
+            else:
+                status = "⏳ I'm still working on the previous request — I'll respond to your message shortly."
+            try:
+                await self._client.chat_postMessage(
+                    channel=channel,
+                    text=status,
+                    thread_ts=thread_ts,
+                )
+            except Exception:
+                pass  # Best-effort
+
+        async with lock:
+            await self._process_and_respond_locked(
+                text, user_id, conversation, channel, thread_ts, message_ts, conv_key
+            )
+
+    async def _process_and_respond_locked(
+        self,
+        text: str,
+        user_id: str,
+        conversation: Conversation,
+        channel: str,
+        thread_ts: str,
+        message_ts: str,
+        conv_key: str,
+    ) -> None:
+        """Inner implementation of _process_and_respond, called under lock."""
         # Resolve user ID to display name
         user_name = await self._get_user_display_name(user_id)
         
@@ -233,12 +280,31 @@ class SlackEventHandler:
         added_reactions: list[str] = []
         react_ts = message_ts or thread_ts  # The message to react to
 
+        # Human-friendly tool name mapping for status messages
+        _TOOL_DISPLAY_NAMES: dict[str, str] = {
+            "code_agent": "running code",
+            "writing_agent": "drafting text",
+            "knowledge_agent": "researching",
+            "firecrawl_scrape": "scraping a webpage",
+            "firecrawl_crawl": "crawling a website",
+            "gmail_search": "searching emails",
+            "gmail_send": "sending an email",
+            "gmail_read": "reading an email",
+            "search_wiki": "searching the wiki",
+            "search_notion": "searching Notion",
+            "search_drive": "searching Drive",
+            "sheets_read": "reading a spreadsheet",
+            "docs_get": "reading a document",
+            "calendar_list_events": "checking the calendar",
+            "calendar_create_event": "creating a calendar event",
+        }
+
         try:
             # Build a callback that reacts to the user's message
             async def _notify_tool_calls(
                 tools: list[tuple[str, str]],
             ) -> None:
-                """Add emoji reactions to show which tools are running."""
+                """Add emoji reactions and update active-tool status."""
                 # Map tool names to Slack emoji names
                 _TOOL_EMOJI: dict[str, str] = {
                     "code_agent": "robot_face",
@@ -260,7 +326,17 @@ class SlackEventHandler:
                     "sheets_read": "bar_chart",
                     "sheets_write": "bar_chart",
                     "docs_get": "page_facing_up",
+                    "writing_agent": "pencil2",
+                    "knowledge_agent": "brain",
                 }
+
+                # Update the active-tool description for status messages
+                tool_names = [t_name for t_name, _ in tools]
+                display_names = [
+                    _TOOL_DISPLAY_NAMES.get(n, n) for n in tool_names
+                ]
+                self._active_tools[conv_key] = ", ".join(display_names)
+
                 if not self._client or not react_ts:
                     return
                 # Collect unique emojis for this batch of tool calls
@@ -334,3 +410,6 @@ class SlackEventHandler:
                 )
             except Exception:
                 logger.exception("Failed to send error message")
+        finally:
+            # Clear active-tool status when done
+            self._active_tools.pop(conv_key, None)
