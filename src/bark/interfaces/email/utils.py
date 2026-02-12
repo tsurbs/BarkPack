@@ -176,16 +176,20 @@ def build_reply_message(
     original_message_id: str,
     references: str = "",
     thread_id: str | None = None,
+    from_addr: str | None = None,
 ) -> dict:
     """Build a Gmail API-ready reply message with proper threading headers.
 
     Returns a dict with 'raw' (base64url-encoded) and optionally 'threadId'.
     """
     msg = MIMEMultipart("alternative")
+    if from_addr:
+        msg["From"] = f"Bark <{from_addr}>"
     msg["To"] = to
     msg["Subject"] = subject
-    msg["In-Reply-To"] = original_message_id
-    msg["References"] = f"{references} {original_message_id}".strip() if references else original_message_id
+    if original_message_id:
+        msg["In-Reply-To"] = original_message_id
+    msg["References"] = f"{references} {original_message_id}".strip() if references else (original_message_id or "")
 
     # Attach plain text part first (fallback), then HTML (preferred)
     part_plain = MIMEText(body_plain + EMAIL_SIGNATURE_PLAIN, "plain")

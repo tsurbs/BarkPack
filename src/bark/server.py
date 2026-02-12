@@ -43,10 +43,16 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Slack integration not configured (missing credentials)")
 
-    # Initialize Email worker if enabled and Google credentials are available
-    if settings.email_enabled and (
-        settings.google_drive_credentials_json or settings.google_drive_credentials_file
-    ):
+    # Initialize Email worker if enabled and Google credentials are available.
+    # Note: google_drive_credentials_file defaults to "credentials.json" which
+    # may not actually exist, so we check google_drive_credentials_json (the
+    # primary production path) or verify the file actually exists on disk.
+    import os
+    has_google_creds = bool(settings.google_drive_credentials_json) or (
+        settings.google_drive_credentials_file
+        and os.path.exists(settings.google_drive_credentials_file)
+    )
+    if settings.email_enabled and has_google_creds:
         try:
             email_worker = EmailWorker(settings=settings)
             await email_worker.start()
@@ -59,7 +65,13 @@ async def lifespan(app: FastAPI):
             logger.exception("Failed to start email worker")
             email_worker = None
     else:
-        logger.info("Email interface not enabled or Google credentials not configured")
+        if not settings.email_enabled:
+            logger.info("Email interface disabled (EMAIL_ENABLED=false)")
+        else:
+            logger.info(
+                "Email interface not started — no Google credentials found "
+                "(set GOOGLE_DRIVE_CREDENTIALS_JSON or provide a credentials file)"
+            )
 
     yield
 

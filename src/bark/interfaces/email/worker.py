@@ -14,6 +14,10 @@ from bark.interfaces.email.handler import EmailHandler
 
 logger = logging.getLogger(__name__)
 
+# Maximum number of consecutive poll errors before pausing with back-off
+_MAX_CONSECUTIVE_ERRORS = 5
+_BACKOFF_SECONDS = 300  # 5-minute pause after repeated failures
+
 
 class EmailWorker:
     """Periodically polls Gmail for unread emails and processes them.
@@ -42,6 +46,7 @@ class EmailWorker:
         self._handler: EmailHandler | None = None
         self._task: asyncio.Task[Any] | None = None
         self._running = False
+        self._consecutive_errors = 0
 
     async def start(self) -> None:
         """Initialise the handler and launch the polling loop."""
@@ -88,10 +93,31 @@ class EmailWorker:
         while self._running:
             try:
                 await self._poll_once()
+                # Reset error counter on success
+                self._consecutive_errors = 0
             except asyncio.CancelledError:
                 raise
             except Exception:
-                logger.exception("Error during email poll cycle")
+                self._consecutive_errors += 1
+                logger.exception(
+                    "Error during email poll cycle (%d/%d consecutive)",
+                    self._consecutive_errors,
+                    _MAX_CONSECUTIVE_ERRORS,
+                )
+
+                # Back off if we're seeing repeated failures
+                if self._consecutive_errors >= _MAX_CONSECUTIVE_ERRORS:
+                    logger.warning(
+                        "Too many consecutive email poll errors — "
+                        "backing off for %ds",
+                        _BACKOFF_SECONDS,
+                    )
+                    try:
+                        await asyncio.sleep(_BACKOFF_SECONDS)
+                    except asyncio.CancelledError:
+                        raise
+                    self._consecutive_errors = 0
+                    continue
 
             # Sleep until the next cycle (interruptible via cancellation)
             try:

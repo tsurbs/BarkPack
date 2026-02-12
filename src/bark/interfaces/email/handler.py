@@ -85,11 +85,23 @@ class EmailHandler:
     _chatbot: ChatBot | None = None
     _conversations: dict[str, Conversation] = field(default_factory=dict)
     _processed_ids: set[str] = field(default_factory=set)
+    _own_email: str | None = None
 
     async def __aenter__(self) -> "EmailHandler":
         """Enter async context — initialise ChatBot."""
         self._chatbot = ChatBot(settings=self.settings)
         await self._chatbot.__aenter__()
+
+        # Resolve our own email address so we can filter self-sent messages
+        try:
+            self._own_email = await self._resolve_own_email()
+            logger.info("Resolved own email address: %s", self._own_email)
+        except Exception:
+            logger.warning(
+                "Could not resolve own email address — "
+                "will rely on query-level filtering only"
+            )
+
         return self
 
     async def __aexit__(self, *args: Any) -> None:
@@ -106,13 +118,48 @@ class EmailHandler:
         from bark.context.google_auth import get_google_auth
         return get_google_auth().gmail
 
+    async def _resolve_own_email(self) -> str:
+        """Fetch the authenticated Gmail user's email address."""
+        svc = self._get_gmail_service()
+        from bark.core.tools import _sync_tool_lock
+
+        def _get_profile() -> str:
+            with _sync_tool_lock:
+                profile = svc.users().getProfile(userId="me").execute()
+                return profile.get("emailAddress", "")
+
+        return await asyncio.to_thread(_get_profile)
+
+    def _is_self_sent(self, email: "InboundEmail") -> bool:
+        """Check if an email was sent by us (to prevent reply loops)."""
+        sender = email.sender_email.lower()
+
+        # Check against resolved own email
+        if self._own_email and sender == self._own_email.lower():
+            return True
+
+        # Check against the configured target address (Bark's address)
+        target = self.settings.email_target_address.lower()
+        if sender == target:
+            return True
+
+        # Also match the base address without the +bark alias
+        # e.g. ops+bark@scottylabs.org -> ops@scottylabs.org
+        base_target = target.replace("+bark", "")
+        if sender == base_target:
+            return True
+
+        return False
+
     async def fetch_unread_emails(self, target_address: str) -> list[InboundEmail]:
         """Fetch unread emails addressed to *target_address*.
 
-        Uses the Gmail API search: ``to:<target_address> is:unread``
+        Uses the Gmail API search: ``to:<target_address> is:unread -from:me``
+        The ``-from:me`` filter prevents processing our own sent replies.
         """
         svc = self._get_gmail_service()
-        query = f"to:{target_address} is:unread"
+        # Exclude emails from ourselves to prevent reply loops
+        query = f"to:{target_address} is:unread -from:me"
 
         # Run blocking Google API call in a thread
         from bark.core.tools import _sync_tool_lock
@@ -127,7 +174,12 @@ class EmailHandler:
                 )
                 return results.get("messages", [])
 
-        stubs = await asyncio.to_thread(_search)
+        try:
+            stubs = await asyncio.to_thread(_search)
+        except Exception:
+            logger.exception("Gmail API search failed for query: %s", query)
+            return []
+
         if not stubs:
             return []
 
@@ -141,8 +193,20 @@ class EmailHandler:
 
             try:
                 email = await self._fetch_and_parse(svc, msg_id)
-                if email:
-                    emails.append(email)
+                if email is None:
+                    continue
+
+                # Double-check: skip self-sent messages that slipped through
+                if self._is_self_sent(email):
+                    logger.debug(
+                        "Skipping self-sent email %s from %s",
+                        msg_id, email.sender_email,
+                    )
+                    # Mark as processed so we don't recheck every cycle
+                    self._processed_ids.add(msg_id)
+                    continue
+
+                emails.append(email)
             except Exception:
                 logger.exception("Failed to fetch/parse email %s", msg_id)
 
@@ -257,8 +321,12 @@ class EmailHandler:
         if not reply_subject.lower().startswith("re:"):
             reply_subject = f"Re: {reply_subject}"
 
+        # Determine the From address for the reply
+        from_address = self._own_email or self.settings.email_target_address
+
         # Build MIME message
         reply_body = build_reply_message(
+            from_addr=from_address,
             to=email.sender_email,
             subject=reply_subject,
             body_html=response_html + quoted_html,
