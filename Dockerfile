@@ -5,11 +5,18 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 WORKDIR /app
 
 # Install git for wiki cloning, tesseract for PDF OCR, poppler for pdf2image
+# Also install curl and jq for the coding subagent
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     tesseract-ocr \
     poppler-utils \
+    curl \
+    jq \
     && rm -rf /var/lib/apt/lists/*
+
+# Create volume mount point (Railway volumes mount at runtime;
+# this ensures the directory exists for local dev too)
+RUN mkdir -p /bark-volume
 
 # Enable bytecode compilation for faster startup
 ENV UV_COMPILE_BYTECODE=1

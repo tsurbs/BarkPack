@@ -178,6 +178,20 @@ from bark.tools.document_tools import (  # noqa: F401, E402
     docs_read_chunk,
 )
 
+# Import volume tools to register them
+from bark.tools.volume_tools import (  # noqa: F401, E402
+    volume_download,
+    volume_download_drive,
+    volume_list,
+    volume_read,
+    volume_delete,
+)
+
+# Import code tools to register them
+from bark.tools.code_tools import (  # noqa: F401, E402
+    code_agent,
+)
+
 
 @tool(
     name="save_to_memory",
