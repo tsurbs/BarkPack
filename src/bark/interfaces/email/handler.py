@@ -298,9 +298,11 @@ class EmailHandler:
 
         if not response_html or response_html.strip() == "__NO_REPLY__":
             logger.info("Bot chose not to reply to email %s", email.message_id)
-            # Still mark as processed so we don't retry
+            # Mark as processed so we don't retry, but return False so the
+            # caller does NOT mark the email as read — a human should still
+            # see it as unread in their inbox.
             self._processed_ids.add(email.message_id)
-            return True
+            return False
 
         # Build plain-text version by stripping HTML
         from bark.interfaces.email.utils import extract_text_from_html

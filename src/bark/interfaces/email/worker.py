@@ -143,14 +143,16 @@ class EmailWorker:
                 email.subject,
             )
             try:
-                success = await self._handler.process_email(email)
-                if success:
-                    # Mark as read ONLY after successful response
+                replied = await self._handler.process_email(email)
+                if replied:
+                    # Mark as read ONLY after a reply was actually sent
                     await self._handler.mark_as_read(email.message_id)
                     logger.info("Successfully processed email %s", email.message_id)
                 else:
-                    logger.warning(
-                        "Failed to process email %s — will retry next cycle",
+                    # No reply was sent (bot declined, or generation failed).
+                    # Leave the email unread so it's visible to humans.
+                    logger.info(
+                        "No reply sent for email %s — leaving unread",
                         email.message_id,
                     )
             except Exception:
