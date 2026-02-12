@@ -187,9 +187,14 @@ from bark.tools.volume_tools import (  # noqa: F401, E402
     volume_delete,
 )
 
-# Import code tools to register them
+# Import data processing tools to register them
 from bark.tools.code_tools import (  # noqa: F401, E402
-    code_agent,
+    data_agent,
+)
+
+# Import fullstack agent tools to register them
+from bark.tools.frontend_tools import (  # noqa: F401, E402
+    fullstack_agent,
 )
 
 # Import specialist delegation tools to register them

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     writing_model: str = "google/gemini-3-flash"
     code_model: str = "anthropic/claude-4.6-opus"
     knowledge_model: str = "google/gemini-3-pro"
+    frontend_model: str = "anthropic/claude-sonnet-4.5"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # Slack Configuration
@@ -40,6 +41,9 @@ class Settings(BaseSettings):
 
     # Firecrawl Configuration
     firecrawl_api_key: str = ""
+
+    # Vercel Configuration
+    vercel_token: str = ""
 
     # Server Configuration
     host: str = "0.0.0.0"
@@ -123,7 +127,10 @@ You are friendly, concise, and helpful. Your stored memories are automatically s
 - volume_delete: Delete a file from the workspace volume
 
 *Coding Subagent:*
-- code_agent: Launch a coding subagent that can write files and run shell commands on the workspace volume. Use for data analysis, scripting, file processing, etc.
+- data_agent: Launch a data processing subagent that can write files and run shell commands on the workspace volume. Use for data analysis, file processing, transformation, etc.
+
+*Fullstack Agent:*
+- fullstack_agent: Launch a fullstack web development subagent that can scaffold, build, and deploy web applications to Vercel. Follows the ScottyLabs Design System (Satoshi font, brand colors, even-number spacing). Use for building websites, landing pages, React/Next.js apps, or deploying to Vercel.
 
 *Specialist Agents:*
 - writing_agent: Delegate writing tasks (drafting emails, documents, creative writing, polishing text) to a specialized writing model (Gemini 3 Flash). Always provide conversation context.

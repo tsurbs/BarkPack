@@ -1,9 +1,9 @@
-"""Data processing subagent tool for Bark.
+"""Fullstack web development subagent tool for Bark.
 
-Provides a `data_agent` tool that spawns an autonomous data-processing subagent
-capable of writing files and executing shell commands on the bark-volume.
-The subagent uses its own OpenRouter conversation loop with a restricted
-tool set (shell_exec, write_file, read_file).
+Provides a `fullstack_agent` tool that spawns an autonomous subagent
+capable of scaffolding, building, and deploying web applications to Vercel.
+Uses the ScottyLabs Design System (SKILL.md) and has access to shell, file,
+and deployment tools.
 """
 
 import asyncio
@@ -23,39 +23,78 @@ from bark.tools.volume_tools import VOLUME_PATH
 logger = logging.getLogger(__name__)
 
 # Max iterations the subagent conversation loop can run
-MAX_ITERATIONS = 15
+MAX_ITERATIONS = 25
 # Max seconds a single shell command can run
-SHELL_TIMEOUT = 120
+SHELL_TIMEOUT = 180
 # Max characters of shell output to capture
 MAX_OUTPUT_CHARS = 50_000
 
-SUBAGENT_SYSTEM_PROMPT = """You are a data processing subagent running inside a sandboxed Docker container.
+# ---------------------------------------------------------------------------
+# Load SKILL.md (ScottyLabs Design System)
+# ---------------------------------------------------------------------------
+
+_SKILL_PATH = Path(__file__).resolve().parent / "skills" / "frontend.md"
+
+
+def _load_skill() -> str:
+    """Load the ScottyLabs Design System skill file."""
+    try:
+        return _SKILL_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        logger.warning(f"SKILL.md not found at {_SKILL_PATH}")
+        return "(Design system reference not available)"
+
+
+FULLSTACK_SYSTEM_PROMPT = """You are a fullstack web development subagent running inside a sandboxed Docker container.
 You have access to a workspace volume at {volume_path}.
 
-Your job is to complete data processing tasks by writing scripts and executing shell commands.
-The workspace may already contain files from previous operations.
+Your job is to build and deploy web applications following the ScottyLabs Design System.
 
-You specialize in:
-- Analyzing data files (CSV, JSON, Excel, etc.)
-- Data transformation, cleaning, and reshaping
-- Statistical analysis and aggregation
-- Writing Python scripts for data pipelines
-- File format conversion
-- Generating reports and summaries from data
+---
 
-**Available tools:**
+## ScottyLabs Design System Reference
+
+{skill_content}
+
+---
+
+## Your Capabilities
+
+You can build complete web applications:
+- **Frontend:** React, Next.js, Vite — styled with Tailwind CSS and ScottyLabs design tokens
+- **Backend/API:** Next.js API routes, serverless functions
+- **Deployment:** Deploy to Vercel using the CLI
+
+## Available Tools
+
 - `shell_exec`: Execute a shell command. Returns stdout+stderr.
 - `write_file`: Write content to a file on the volume.
 - `read_file`: Read content from a file on the volume.
 
-**Guidelines:**
+## Workflow
+
+1. **Scaffold** the project (e.g., `npx create-next-app@latest ./project-name --ts --tailwind --app --use-npm --eslint`)
+2. **Configure** Tailwind with ScottyLabs design tokens (extend `tailwind.config.ts`)
+3. **Build** components and pages following the design system
+4. **Test** locally with `npm run build` to verify no errors
+5. **Deploy** to Vercel: `npx vercel --yes --token $VERCEL_TOKEN` (if a token is available)
+
+## Guidelines
+
 - Always work within the volume directory ({volume_path}).
-- Use shell_exec to install Python packages with `pip install <package>` if needed (pandas, numpy, etc.).
-- Write scripts to the volume before executing them.
-- When done, provide a clear summary of what you did and the results.
+- Follow the ScottyLabs Design System strictly — use Satoshi for headings, Inter for body text.
+- Use even-number spacing (multiples of 2) for all paddings and margins.
+- Use the ScottyLabs color tokens (scotty-red, scotty-dark, scotty-gray-*, etc.).
+- Install packages with `npm install <package>` as needed.
+- When done, provide a clear summary of what you built, the project structure, and the deployment URL (if deployed).
 - If you encounter an error, try to fix it before giving up.
 - Be efficient — don't repeat commands unnecessarily.
 """
+
+
+# ---------------------------------------------------------------------------
+# Inner tool implementations (shared with code_tools pattern)
+# ---------------------------------------------------------------------------
 
 
 def _safe_volume_path(subpath: str) -> Path:
@@ -71,13 +110,19 @@ async def _shell_exec(command: str, working_dir: str = "") -> str:
     """Execute a shell command and return output."""
     cwd = _safe_volume_path(working_dir) if working_dir else Path(VOLUME_PATH).resolve()
 
+    # Inject VERCEL_TOKEN into the environment if available
+    env = {**os.environ, "HOME": VOLUME_PATH}
+    settings = get_settings()
+    if settings.vercel_token:
+        env["VERCEL_TOKEN"] = settings.vercel_token
+
     try:
         proc = await asyncio.create_subprocess_shell(
             command,
             cwd=str(cwd),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-            env={**os.environ, "HOME": VOLUME_PATH},
+            env=env,
         )
         try:
             stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=SHELL_TIMEOUT)
@@ -123,7 +168,10 @@ def _read_file(path: str, max_chars: int = 50000) -> str:
         return f"❌ Error reading file: {e}"
 
 
-# The inner tools available to the subagent
+# ---------------------------------------------------------------------------
+# Inner tools available to the subagent
+# ---------------------------------------------------------------------------
+
 SUBAGENT_TOOLS = [
     {
         "type": "function",
@@ -132,7 +180,9 @@ SUBAGENT_TOOLS = [
             "description": (
                 "Execute a shell command in the workspace. "
                 "Returns stdout and stderr combined. "
-                "Commands run with a 120-second timeout."
+                "Use for: npm commands, npx, git, vercel CLI, etc. "
+                "Commands run with a 180-second timeout. "
+                "VERCEL_TOKEN is available in the environment if configured."
             ),
             "parameters": {
                 "type": "object",
@@ -209,18 +259,29 @@ async def _execute_subagent_tool(tool_name: str, args: dict[str, Any]) -> str:
         return f"Unknown tool: {tool_name}"
 
 
-async def _run_subagent(task: str, model: str | None = None) -> str:
-    """Run the coding subagent conversation loop.
+# ---------------------------------------------------------------------------
+# Autonomous subagent loop
+# ---------------------------------------------------------------------------
+
+
+async def _run_fullstack_subagent(task: str, model: str | None = None) -> str:
+    """Run the fullstack subagent conversation loop.
 
     Returns the subagent's final text response.
     """
     settings = get_settings()
-    model = model or settings.code_model
+    model = model or settings.frontend_model
 
     # Ensure volume exists
     Path(VOLUME_PATH).mkdir(parents=True, exist_ok=True)
 
-    system_prompt = SUBAGENT_SYSTEM_PROMPT.format(volume_path=VOLUME_PATH)
+    # Build system prompt with SKILL.md content
+    skill_content = _load_skill()
+    system_prompt = FULLSTACK_SYSTEM_PROMPT.format(
+        volume_path=VOLUME_PATH,
+        skill_content=skill_content,
+    )
+
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": task},
@@ -232,10 +293,10 @@ async def _run_subagent(task: str, model: str | None = None) -> str:
             "Authorization": f"Bearer {settings.openrouter_api_key}",
             "Content-Type": "application/json",
         },
-        timeout=180,
+        timeout=300,
     ) as client:
         for iteration in range(MAX_ITERATIONS):
-            logger.info(f"[DataAgent] Iteration {iteration + 1}/{MAX_ITERATIONS}")
+            logger.info(f"[FullstackAgent] Iteration {iteration + 1}/{MAX_ITERATIONS}")
 
             payload = {
                 "model": model,
@@ -248,7 +309,7 @@ async def _run_subagent(task: str, model: str | None = None) -> str:
             start = time.time()
             resp = await client.post("/chat/completions", json=payload)
             duration = time.time() - start
-            logger.info(f"[DataAgent] API request took {duration:.2f}s")
+            logger.info(f"[FullstackAgent] API request took {duration:.2f}s")
             resp.raise_for_status()
             data = resp.json()
 
@@ -267,10 +328,10 @@ async def _run_subagent(task: str, model: str | None = None) -> str:
                 t_name = tc["function"]["name"]
                 a_str = tc["function"].get("arguments", "{}") or "{}"
                 t_args = json.loads(a_str)
-                logger.info(f"[DataAgent] Tool: {t_name}({a_str[:200]})")
+                logger.info(f"[FullstackAgent] Tool: {t_name}({a_str[:200]})")
                 result = await _execute_subagent_tool(t_name, t_args)
                 logger.info(
-                    f"[DataAgent] Result: {result[:200]}{'...' if len(result) > 200 else ''}"
+                    f"[FullstackAgent] Result: {result[:200]}{'...' if len(result) > 200 else ''}"
                 )
                 return {
                     "role": "tool",
@@ -283,22 +344,29 @@ async def _run_subagent(task: str, model: str | None = None) -> str:
             )
             messages.extend(tool_results)
 
-        return "⚠️ Subagent reached max iterations without completing. Last actions may have partial results."
+        return "⚠️ Fullstack agent reached max iterations without completing. Last actions may have partial results."
+
+
+# ---------------------------------------------------------------------------
+# Public tool
+# ---------------------------------------------------------------------------
 
 
 @tool(
-    name="data_agent",
+    name="fullstack_agent",
     description=(
-        "Launch a data processing subagent. The subagent can write files "
-        "to the bark-volume workspace, execute shell commands (Python, bash, etc.), "
-        "and read files. Use this for tasks like:\n"
-        "- Analyzing data files (CSV, JSON, Excel, etc.)\n"
-        "- Data transformation, cleaning, and reshaping\n"
-        "- Statistical analysis and aggregation\n"
-        "- Writing and running Python data scripts\n"
-        "- File format conversion\n"
-        "- Generating reports and summaries from data\n\n"
-        "The subagent runs autonomously and returns a summary of what it did."
+        "Launch a fullstack web development subagent. The subagent can scaffold, "
+        "build, and deploy complete web applications to Vercel. It follows the "
+        "ScottyLabs Design System (Satoshi + Inter fonts, scotty-red brand colors, "
+        "Tailwind CSS, even-number spacing).\n\n"
+        "Use this for tasks like:\n"
+        "- Building a new ScottyLabs website or landing page\n"
+        "- Creating React/Next.js applications with proper branding\n"
+        "- Setting up API routes and serverless functions\n"
+        "- Deploying projects to Vercel\n"
+        "- Prototyping UI components following the design system\n\n"
+        "The subagent runs autonomously and returns a summary of what it built, "
+        "including the deployment URL if deployed."
     ),
     parameters={
         "type": "object",
@@ -306,22 +374,22 @@ async def _run_subagent(task: str, model: str | None = None) -> str:
             "task": {
                 "type": "string",
                 "description": (
-                    "Detailed description of the data processing task. "
-                    "Be specific about what files to work with, what to produce, "
-                    "and what results to report back."
+                    "Detailed description of the web application to build. "
+                    "Include what pages/features to create, the purpose of the app, "
+                    "and whether to deploy to Vercel."
                 ),
             },
         },
         "required": ["task"],
     },
 )
-async def data_agent(task: str) -> str:
-    """Launch a data processing subagent."""
+async def fullstack_agent(task: str) -> str:
+    """Launch a fullstack web development subagent."""
     try:
-        result = await _run_subagent(task)
-        return f"**Data Subagent Result:**\n\n{result}"
+        result = await _run_fullstack_subagent(task)
+        return f"**Fullstack Agent Result:**\n\n{result}"
     except httpx.HTTPStatusError as e:
-        return f"❌ Data agent API error: HTTP {e.response.status_code}"
+        return f"❌ Fullstack agent API error: HTTP {e.response.status_code}"
     except Exception as e:
-        logger.exception("Data agent failed")
-        return f"❌ Data agent error: {e}"
+        logger.exception("Fullstack agent failed")
+        return f"❌ Fullstack agent error: {e}"
