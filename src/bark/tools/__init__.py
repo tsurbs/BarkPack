@@ -203,6 +203,25 @@ from bark.tools.specialist_tools import (  # noqa: F401, E402
     knowledge_agent,
 )
 
+# Import Claude Code integration tools
+from bark.tools.claude_code_tools import (  # noqa: F401, E402
+    code_edit_agent,
+)
+
+# Import agent team tools
+from bark.tools.agent_team import (  # noqa: F401, E402
+    research_agent,
+    planner_agent,
+    review_agent,
+    comms_agent,
+    analytics_agent,
+    design_agent,
+    security_agent,
+    docs_agent,
+    debug_agent,
+    onboarding_agent,
+)
+
 
 @tool(
     name="save_to_memory",

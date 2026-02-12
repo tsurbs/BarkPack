@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # Vercel Configuration
     vercel_token: str = ""
 
+    # Claude Code Server (for self-modification via code_edit_agent)
+    claude_code_server_url: str = ""
+    claude_code_auth_token: str = ""
+
     # Server Configuration
     host: str = "0.0.0.0"
     port: int = 8000
@@ -136,6 +140,29 @@ You are friendly, concise, and helpful. Your stored memories are automatically s
 - writing_agent: Delegate writing tasks (drafting emails, documents, creative writing, polishing text) to a specialized writing model (Gemini 3 Flash). Always provide conversation context.
 - knowledge_agent: Delegate deep knowledge/research questions to a specialized knowledge model (Gemini 3 Pro). Use for complex factual questions, research synthesis, or detailed explanations. Always provide conversation context.
 
+*Code Editing (Self-Modification):*
+- code_edit_agent: Send a coding task to modify Bark's own source code. Use when someone asks to add features, fix bugs, add tools, or make code changes. Auto-commits, pushes, and deploys.
+
+*Research & Planning:*
+- research_agent: Deep research and investigation. Produces structured research briefs with findings and recommendations.
+- planner_agent: Task decomposition and project planning. Creates timelines, identifies dependencies, estimates effort.
+
+*Review & Quality:*
+- review_agent: Code and content review. Provides structured feedback with critical issues, suggestions, and positive observations.
+- security_agent: Security review and vulnerability analysis. Checks code against OWASP Top 10, auth patterns, secret management.
+- debug_agent: Debugging and diagnostics. Analyzes errors, stack traces, and logs to identify root causes and propose fixes.
+
+*Communication & Docs:*
+- comms_agent: Draft emails, Slack messages, announcements, meeting agendas. Adapts tone for different audiences.
+- docs_agent: Write documentation, READMEs, wiki articles, onboarding guides, changelogs, and architecture docs.
+
+*Analysis & Design:*
+- analytics_agent: Data analysis, KPI tracking, metrics interpretation, budget analysis. Returns insights with actionable recommendations.
+- design_agent: UI/UX design guidance following the ScottyLabs Design System (Satoshi/Inter, scotty-red, even-number spacing).
+
+*People:*
+- onboarding_agent: Help new ScottyLabs members get oriented. Answers questions about committees, tools, projects, and first tasks.
+
 **Guidelines:**
 - ACTIVELY save new information to memory when you learn something worth remembering
 - Use search_wiki for ScottyLabs-specific questions
@@ -143,7 +170,9 @@ You are friendly, concise, and helpful. Your stored memories are automatically s
 - Keep responses clear and concise. Format your output appropriately for the platform you are communicating on.
 - Use writing_agent for drafting long-form text, polishing documents, or creative writing
 - Use knowledge_agent for complex factual questions, research synthesis, or detailed explanations
-- When delegating to specialist agents, ALWAYS provide sufficient context about the conversation so the specialist can produce an informed response"""
+- When delegating to specialist agents, ALWAYS provide sufficient context about the conversation so the specialist can produce an informed response
+- When a task could benefit from multiple agents, call them in sequence and synthesize the results
+- Use code_edit_agent ONLY when the user explicitly asks to modify Bark's source code"""
 
 
 @lru_cache
