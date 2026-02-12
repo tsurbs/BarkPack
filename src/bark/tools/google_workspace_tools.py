@@ -5,6 +5,8 @@ Meet, Admin SDK, Apps Script, Postmaster, Drive Activity, and Drive Labels.
 """
 
 import base64
+
+from bark.core.formatting import GMAIL_FORMAT_INSTRUCTIONS, GOOGLE_DOCS_FORMAT_INSTRUCTIONS
 import logging
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
@@ -130,23 +132,35 @@ def _extract_body(payload: dict) -> str:
 
 @tool(
     name="gmail_send",
-    description="Send an email via Gmail. Specify recipient, subject, and body text.",
+    description=(
+        "Send an email via Gmail. Specify recipient, subject, and body. "
+        "Set html=true to send a rich HTML email (recommended for formatted content).\n\n"
+        + GMAIL_FORMAT_INSTRUCTIONS
+    ),
     parameters={
         "type": "object",
         "properties": {
             "to": {"type": "string", "description": "Recipient email address"},
             "subject": {"type": "string", "description": "Email subject line"},
-            "body": {"type": "string", "description": "Plain text email body"},
+            "body": {
+                "type": "string",
+                "description": "Email body — plain text or HTML depending on the html flag",
+            },
+            "html": {
+                "type": "boolean",
+                "description": "If true, send body as HTML for rich formatting. Default false (plain text).",
+            },
         },
         "required": ["to", "subject", "body"],
     },
 )
-def gmail_send(to: str, subject: str, body: str) -> str:
+def gmail_send(to: str, subject: str, body: str, html: bool = False) -> str:
     """Send an email."""
     auth = get_google_auth()
     svc = auth.gmail
 
-    message = MIMEText(body)
+    subtype = "html" if html else "plain"
+    message = MIMEText(body, subtype)
     message["to"] = to
     message["subject"] = subject
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
@@ -455,14 +469,17 @@ def _extract_doc_text(body: dict) -> str:
 
 @tool(
     name="docs_create",
-    description="Create a new Google Doc with a title and optional body text.",
+    description=(
+        "Create a new Google Doc with a title and optional body text.\n\n"
+        + GOOGLE_DOCS_FORMAT_INSTRUCTIONS
+    ),
     parameters={
         "type": "object",
         "properties": {
             "title": {"type": "string", "description": "Document title"},
             "body_text": {
                 "type": "string",
-                "description": "Initial text content for the document (optional)",
+                "description": "Initial text content for the document (optional). Use clean plain text — no Markdown or HTML.",
             },
         },
         "required": ["title"],

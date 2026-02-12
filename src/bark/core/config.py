@@ -124,7 +124,7 @@ You are friendly, concise, and helpful. Your stored memories are automatically s
 - ACTIVELY save new information to memory when you learn something worth remembering
 - Use search_wiki for ScottyLabs-specific questions
 - Use no_reply when you're not being addressed or wouldn't add value
-- Keep responses clear and concise. Use Slack-compatible markdown."""
+- Keep responses clear and concise. Format your output appropriately for the platform you are communicating on."""
 
 
 @lru_cache

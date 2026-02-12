@@ -11,21 +11,16 @@ from slack_sdk.web.async_client import AsyncWebClient
 from bark.core.chatbot import ChatBot, Conversation
 from bark.core.config import Settings, get_settings
 
+from bark.core.formatting import SLACK_FORMAT_INSTRUCTIONS
+
 logger = logging.getLogger(__name__)
 
 # System prompt addendum for Slack-specific formatting
-SLACK_SYSTEM_ADDENDUM = """You are communicating through Slack. Use Slack's mrkdwn syntax for formatting:
-- Bold: *text* (not **text**)
-- Italic: _text_ (not *text*)
-- Strikethrough: ~text~
-- Code: `code` or ```code block```
-- Links: <URL|text>
-- Blockquotes: > text
-- Bullet lists: - item or • item
+SLACK_SYSTEM_ADDENDUM = f"""You are communicating through Slack. {SLACK_FORMAT_INSTRUCTIONS}
 
 Each message you receive is prefixed with "[From: username]" so you know who is speaking. You can address users by name when appropriate.
 
-Keep responses concise. Do not use standard markdown syntax.
+Keep responses concise.
 
 IMPORTANT: When you want to separate your response into multiple distinct messages, use double newlines (blank lines) between sections. Each section separated by blank lines will be sent as a separate Slack message."""
 
@@ -173,7 +168,7 @@ class SlackEventHandler:
 
         # Process in background to respond quickly to Slack
         asyncio.create_task(
-            self._process_and_respond(text, user, conversation, channel, thread_ts or ts)
+            self._process_and_respond(text, user, conversation, channel, thread_ts or ts, ts)
         )
 
     async def _handle_message(self, event: dict[str, Any]) -> None:
@@ -197,7 +192,7 @@ class SlackEventHandler:
             logger.info(f"Handling DM from {user}: {text}")
             conversation = self._get_or_create_conversation(channel, thread_ts)
             asyncio.create_task(
-                self._process_and_respond(text, user, conversation, channel, thread_ts or ts)
+                self._process_and_respond(text, user, conversation, channel, thread_ts or ts, ts)
             )
             return
 
@@ -206,7 +201,7 @@ class SlackEventHandler:
             logger.info(f"Handling thread reply from {user} in {channel}: {text}")
             conversation = self._get_or_create_conversation(channel, thread_ts)
             asyncio.create_task(
-                self._process_and_respond(text, user, conversation, channel, thread_ts)
+                self._process_and_respond(text, user, conversation, channel, thread_ts, ts)
             )
 
     async def _process_and_respond(
@@ -216,6 +211,7 @@ class SlackEventHandler:
         conversation: Conversation,
         channel: str,
         thread_ts: str,
+        message_ts: str = "",
     ) -> None:
         """Process a message and send a response."""
         if not self._chatbot or not self._client:
@@ -233,41 +229,56 @@ class SlackEventHandler:
         # Prefix message with user identity so the bot knows who is speaking
         message_with_identity = f"[From: {user_name}] {sanitized_text}"
 
+        # Track reactions we add so we can remove them after responding
+        added_reactions: list[str] = []
+        react_ts = message_ts or thread_ts  # The message to react to
+
         try:
-            # Build a callback that posts tool status to Slack
+            # Build a callback that reacts to the user's message
             async def _notify_tool_calls(
                 tools: list[tuple[str, str]],
             ) -> None:
-                """Post a status message when bark starts running tools."""
-                # Human-friendly names for tool categories
-                _TOOL_DESCRIPTIONS: dict[str, str] = {
-                    "code_agent": "🤖 Launching coding subagent…",
-                    "volume_download": "📥 Downloading file…",
-                    "volume_download_drive": "📥 Downloading from Google Drive…",
-                    "firecrawl_scrape": "🌐 Scraping webpage…",
-                    "firecrawl_crawl": "🌐 Crawling website…",
-                    "gmail_search": "📧 Searching emails…",
-                    "gmail_send": "📧 Sending email…",
-                    "calendar_create_event": "📅 Creating calendar event…",
-                    "refresh_context": "🔄 Refreshing wiki context…",
+                """Add emoji reactions to show which tools are running."""
+                # Map tool names to Slack emoji names
+                _TOOL_EMOJI: dict[str, str] = {
+                    "code_agent": "robot_face",
+                    "volume_download": "inbox_tray",
+                    "volume_download_drive": "inbox_tray",
+                    "volume_list": "file_folder",
+                    "volume_read": "eyes",
+                    "firecrawl_scrape": "globe_with_meridians",
+                    "firecrawl_crawl": "globe_with_meridians",
+                    "gmail_search": "email",
+                    "gmail_send": "outbox_tray",
+                    "gmail_read": "email",
+                    "calendar_list_events": "calendar",
+                    "calendar_create_event": "calendar",
+                    "refresh_context": "arrows_counterclockwise",
+                    "search_wiki": "mag",
+                    "search_notion": "mag",
+                    "search_drive": "mag",
+                    "sheets_read": "bar_chart",
+                    "sheets_write": "bar_chart",
+                    "docs_get": "page_facing_up",
                 }
-                # Only post for tools that tend to be slow
-                status_parts: list[str] = []
+                if not self._client or not react_ts:
+                    return
+                # Collect unique emojis for this batch of tool calls
+                emojis_to_add: list[str] = []
                 for t_name, _ in tools:
-                    if t_name in _TOOL_DESCRIPTIONS:
-                        status_parts.append(_TOOL_DESCRIPTIONS[t_name])
-                    elif t_name == "shell_exec":
-                        status_parts.append("⚙️ Running shell command…")
-                if status_parts and self._client:
-                    status_msg = "\n".join(status_parts)
+                    emoji = _TOOL_EMOJI.get(t_name)
+                    if emoji and emoji not in added_reactions and emoji not in emojis_to_add:
+                        emojis_to_add.append(emoji)
+                for emoji in emojis_to_add:
                     try:
-                        await self._client.chat_postMessage(
+                        await self._client.reactions_add(
                             channel=channel,
-                            text=status_msg,
-                            thread_ts=thread_ts,
+                            timestamp=react_ts,
+                            name=emoji,
                         )
+                        added_reactions.append(emoji)
                     except Exception:
-                        pass  # Best-effort
+                        pass  # Best-effort (e.g. emoji already added)
 
             # Get response from chatbot
             response = await self._chatbot.chat(
@@ -295,6 +306,17 @@ class SlackEventHandler:
                         text=msg,
                         thread_ts=thread_ts,
                     )
+
+            # Remove status reactions now that we've responded
+            for emoji in added_reactions:
+                try:
+                    await self._client.reactions_remove(
+                        channel=channel,
+                        timestamp=react_ts,
+                        name=emoji,
+                    )
+                except Exception:
+                    pass  # Best-effort
 
             # Track this thread so we respond to follow-up messages
             self._bot_threads.add((channel, thread_ts))
