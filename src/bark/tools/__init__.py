@@ -208,6 +208,11 @@ from bark.tools.claude_code_tools import (  # noqa: F401, E402
     code_edit_agent,
 )
 
+# Import weather tools to register them
+from bark.tools.weather_tools import (  # noqa: F401, E402
+    get_weather,
+)
+
 # Import agent team tools
 from bark.tools.agent_team import (  # noqa: F401, E402
     research_agent,
