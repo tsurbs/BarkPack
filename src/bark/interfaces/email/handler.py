@@ -1,8 +1,12 @@
 """Email processing handler for Bark.
 
-Fetches unread emails sent to the configured address, generates AI
-responses using the same ChatBot pipeline as Slack, and sends replies
-while maintaining thread context.
+Fetches emails labelled ``bark-unread`` sent to the configured address,
+generates AI responses using the same ChatBot pipeline as Slack, and
+sends replies while maintaining thread context.
+
+Uses custom Gmail labels (``bark-unread`` / ``bark-read``) to track
+Bark's own processing state independently of Gmail's native read/unread
+status.
 """
 
 import asyncio
@@ -73,12 +77,20 @@ class InboundEmail:
 # EmailHandler
 # ---------------------------------------------------------------------------
 
+_BARK_UNREAD_LABEL = "bark-unread"
+_BARK_READ_LABEL = "bark-read"
+
+
 @dataclass
 class EmailHandler:
     """Processes inbound emails and generates AI-powered replies.
 
     Manages per-thread conversations so follow-up emails in the same
     Gmail thread maintain context across multiple exchanges.
+
+    Uses custom Gmail labels ``bark-unread`` and ``bark-read`` to track
+    Bark's own processing state independently of Gmail's native
+    read/unread status.
     """
 
     settings: Settings = field(default_factory=get_settings)
@@ -86,9 +98,10 @@ class EmailHandler:
     _conversations: dict[str, Conversation] = field(default_factory=dict)
     _processed_ids: set[str] = field(default_factory=set)
     _own_email: str | None = None
+    _label_ids: dict[str, str] = field(default_factory=dict)  # label name -> label ID
 
     async def __aenter__(self) -> "EmailHandler":
-        """Enter async context — initialise ChatBot."""
+        """Enter async context — initialise ChatBot and ensure custom labels."""
         self._chatbot = ChatBot(settings=self.settings)
         await self._chatbot.__aenter__()
 
@@ -100,6 +113,15 @@ class EmailHandler:
             logger.warning(
                 "Could not resolve own email address — "
                 "will rely on query-level filtering only"
+            )
+
+        # Ensure custom labels exist and cache their IDs
+        try:
+            await self._ensure_labels()
+        except Exception:
+            logger.exception(
+                "Failed to ensure custom Gmail labels — "
+                "email processing may not work correctly"
             )
 
         return self
@@ -130,6 +152,53 @@ class EmailHandler:
 
         return await asyncio.to_thread(_get_profile)
 
+    async def _ensure_labels(self) -> None:
+        """Ensure the custom bark-unread / bark-read labels exist.
+
+        Creates any missing labels and caches all label IDs for later use.
+        """
+        svc = self._get_gmail_service()
+        from bark.core.tools import _sync_tool_lock
+
+        def _list_labels() -> list[dict]:
+            with _sync_tool_lock:
+                resp = svc.users().labels().list(userId="me").execute()
+                return resp.get("labels", [])
+
+        def _create_label(name: str) -> dict:
+            with _sync_tool_lock:
+                body = {
+                    "name": name,
+                    "labelListVisibility": "labelShow",
+                    "messageListVisibility": "show",
+                }
+                return svc.users().labels().create(userId="me", body=body).execute()
+
+        existing = await asyncio.to_thread(_list_labels)
+        existing_by_name = {lbl["name"]: lbl["id"] for lbl in existing}
+
+        for label_name in (_BARK_UNREAD_LABEL, _BARK_READ_LABEL):
+            if label_name in existing_by_name:
+                self._label_ids[label_name] = existing_by_name[label_name]
+                logger.debug("Found existing label %r → %s", label_name, self._label_ids[label_name])
+            else:
+                created = await asyncio.to_thread(_create_label, label_name)
+                self._label_ids[label_name] = created["id"]
+                logger.info("Created Gmail label %r → %s", label_name, self._label_ids[label_name])
+
+    def _get_label_id(self, label_name: str) -> str:
+        """Return the cached Gmail label ID for a custom label name.
+
+        Raises ``RuntimeError`` if the label was not previously ensured.
+        """
+        try:
+            return self._label_ids[label_name]
+        except KeyError:
+            raise RuntimeError(
+                f"Label {label_name!r} not found in cache — "
+                "was _ensure_labels() called?"
+            ) from None
+
     def _is_self_sent(self, email: "InboundEmail") -> bool:
         """Check if an email was sent by us (to prevent reply loops)."""
         sender = email.sender_email.lower()
@@ -152,14 +221,18 @@ class EmailHandler:
         return False
 
     async def fetch_unread_emails(self, target_address: str) -> list[InboundEmail]:
-        """Fetch unread emails addressed to *target_address*.
+        """Fetch emails labelled ``bark-unread`` addressed to *target_address*.
 
-        Uses the Gmail API search: ``to:<target_address> is:unread -from:me``
-        The ``-from:me`` filter prevents processing our own sent replies.
+        Uses the Gmail API search:
+        ``to:<target_address> label:bark-unread -from:me``
+
+        The custom ``bark-unread`` label tracks Bark's own processing state
+        independently of Gmail's native read/unread status.  The ``-from:me``
+        filter prevents processing our own sent replies.
         """
         svc = self._get_gmail_service()
-        # Exclude emails from ourselves to prevent reply loops
-        query = f"to:{target_address} is:unread -from:me"
+        # Use custom bark-unread label instead of Gmail's native is:unread
+        query = f"to:{target_address} label:{_BARK_UNREAD_LABEL} -from:me"
 
         # Run blocking Google API call in a thread
         from bark.core.tools import _sync_tool_lock
@@ -369,20 +442,31 @@ class EmailHandler:
         return True
 
     async def mark_as_read(self, message_id: str) -> None:
-        """Mark a Gmail message as read by removing the UNREAD label."""
+        """Mark a Gmail message as processed by swapping custom labels.
+
+        Removes the ``bark-unread`` label and adds the ``bark-read`` label
+        so that Bark tracks its own processing state independently of
+        Gmail's native read/unread status.
+        """
         svc = self._get_gmail_service()
         from bark.core.tools import _sync_tool_lock
+
+        bark_unread_id = self._get_label_id(_BARK_UNREAD_LABEL)
+        bark_read_id = self._get_label_id(_BARK_READ_LABEL)
 
         def _modify() -> None:
             with _sync_tool_lock:
                 svc.users().messages().modify(
                     userId="me",
                     id=message_id,
-                    body={"removeLabelIds": ["UNREAD"]},
+                    body={
+                        "addLabelIds": [bark_read_id],
+                        "removeLabelIds": [bark_unread_id],
+                    },
                 ).execute()
 
         await asyncio.to_thread(_modify)
-        logger.info("Marked email %s as read", message_id)
+        logger.info("Marked email %s as bark-read (removed bark-unread)", message_id)
 
     # ------------------------------------------------------------------
     # Housekeeping

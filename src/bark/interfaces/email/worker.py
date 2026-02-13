@@ -1,8 +1,8 @@
 """Background worker that periodically polls Gmail for new emails.
 
 Runs as an asyncio task inside the FastAPI lifespan, checking for
-unread messages sent to the configured target address at a regular
-interval.
+messages labelled ``bark-unread`` sent to the configured target address
+at a regular interval.
 """
 
 import asyncio
@@ -20,7 +20,7 @@ _BACKOFF_SECONDS = 300  # 5-minute pause after repeated failures
 
 
 class EmailWorker:
-    """Periodically polls Gmail for unread emails and processes them.
+    """Periodically polls Gmail for ``bark-unread`` emails and processes them.
 
     Usage::
 
@@ -145,14 +145,14 @@ class EmailWorker:
             try:
                 replied = await self._handler.process_email(email)
                 if replied:
-                    # Mark as read ONLY after a reply was actually sent
+                    # Swap bark-unread → bark-read ONLY after a reply was sent
                     await self._handler.mark_as_read(email.message_id)
                     logger.info("Successfully processed email %s", email.message_id)
                 else:
                     # No reply was sent (bot declined, or generation failed).
-                    # Leave the email unread so it's visible to humans.
+                    # Leave the bark-unread label so it's retried / visible.
                     logger.info(
-                        "No reply sent for email %s — leaving unread",
+                        "No reply sent for email %s — leaving bark-unread",
                         email.message_id,
                     )
             except Exception:
