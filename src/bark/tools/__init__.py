@@ -151,6 +151,12 @@ from bark.tools.firecrawl_tools import (  # noqa: F401, E402
     firecrawl_map,
 )
 
+# Import FlareSolverr tools to register them
+from bark.tools.flaresolverr_tools import (  # noqa: F401, E402
+    flaresolverr_scrape,
+    flaresolverr_status,
+)
+
 # Import document/spreadsheet tools to register them
 from bark.tools.document_tools import (  # noqa: F401, E402
     # Spreadsheet metadata

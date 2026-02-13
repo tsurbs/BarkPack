@@ -142,6 +142,8 @@ _TOOL_ACTION_MAP: dict[str, str] = {
     "sheets_write": "Sheets updated",
     "firecrawl_scrape": "Web scraped",
     "firecrawl_crawl": "Web crawled",
+    "flaresolverr_scrape": "Web scraped (FlareSolverr)",
+    "flaresolverr_status": "FlareSolverr checked",
 }
 
 # Tools that shouldn't be logged (internal / noisy)
@@ -215,6 +217,10 @@ def _build_detail(tool_name: str, kwargs: dict[str, Any]) -> str:
         return str(kwargs.get("spreadsheet_id", ""))
     elif tool_name in ("firecrawl_scrape", "firecrawl_crawl"):
         return str(kwargs.get("url", ""))
+    elif tool_name == "flaresolverr_scrape":
+        return str(kwargs.get("url", ""))
+    elif tool_name == "flaresolverr_status":
+        return "Health check"
 
     # Fallback: show first meaningful kwarg value
     for k, v in kwargs.items():

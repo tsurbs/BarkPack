@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # Firecrawl Configuration
     firecrawl_api_key: str = ""
 
+    # FlareSolverr Configuration (for Cloudflare-protected sites)
+    flaresolverr_url: str = ""
+
     # Vercel Configuration
     vercel_token: str = ""
 
@@ -139,6 +142,10 @@ Always set html=true when calling gmail_send.
 - firecrawl_scrape: Scrape a single webpage to markdown
 - firecrawl_crawl: Crawl a multi-page website
 - firecrawl_map: Map a site's URL structure
+
+*Web Scraping (FlareSolverr — Cloudflare bypass):*
+- flaresolverr_scrape: Scrape a Cloudflare-protected webpage (returns raw HTML). Use when firecrawl_scrape fails due to Cloudflare bot detection.
+- flaresolverr_status: Check if FlareSolverr is running and healthy
 
 *Volume (File Workspace):*
 - volume_download: Download a file from a URL to the workspace volume
