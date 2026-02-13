@@ -144,6 +144,8 @@ _TOOL_ACTION_MAP: dict[str, str] = {
     "firecrawl_crawl": "Web crawled",
     "flaresolverr_scrape": "Web scraped (FlareSolverr)",
     "flaresolverr_status": "FlareSolverr checked",
+    "github_read_file": "GitHub file read",
+    "github_read_url": "GitHub file read",
 }
 
 # Tools that shouldn't be logged (internal / noisy)
@@ -221,6 +223,13 @@ def _build_detail(tool_name: str, kwargs: dict[str, Any]) -> str:
         return str(kwargs.get("url", ""))
     elif tool_name == "flaresolverr_status":
         return "Health check"
+    elif tool_name == "github_read_file":
+        owner = kwargs.get("owner", "")
+        repo = kwargs.get("repo", "")
+        path = kwargs.get("path", "")
+        return f"{owner}/{repo}/{path}"
+    elif tool_name == "github_read_url":
+        return str(kwargs.get("url", ""))
 
     # Fallback: show first meaningful kwarg value
     for k, v in kwargs.items():

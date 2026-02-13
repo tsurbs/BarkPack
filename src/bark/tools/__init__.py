@@ -219,6 +219,12 @@ from bark.tools.weather_tools import (  # noqa: F401, E402
     get_weather,
 )
 
+# Import GitHub tools to register them
+from bark.tools.github_tools import (  # noqa: F401, E402
+    github_read_file,
+    github_read_url,
+)
+
 # Import agent team tools
 from bark.tools.agent_team import (  # noqa: F401, E402
     research_agent,
