@@ -7,8 +7,10 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from bark.core.config import get_settings
+from bark.dashboard_api import router as dashboard_router
 from bark.integrations.slack.handler import SlackEventHandler
 from bark.integrations.slack.verification import verify_slack_signature_from_body
 from bark.interfaces.email.worker import EmailWorker
@@ -88,6 +90,18 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Allow the Vercel-hosted dashboard to call the backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Tighten in production if needed
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# Register dashboard API routes
+app.include_router(dashboard_router)
 
 
 @app.get("/health")
