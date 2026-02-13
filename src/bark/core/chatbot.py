@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator
 
 from bark.core.config import Settings, get_settings
-from bark.core.openrouter import Message, OpenRouterClient, ToolCallCallback
+from bark.core.nvidia import Message, NvidiaClient, ToolCallCallback
 from bark.core.tools import ToolRegistry, get_registry
 
 
@@ -104,11 +104,11 @@ class ChatBot:
 
     settings: Settings = field(default_factory=get_settings)
     registry: ToolRegistry = field(default_factory=get_registry)
-    _client: OpenRouterClient | None = None
+    _client: NvidiaClient | None = None
 
     async def __aenter__(self) -> "ChatBot":
         """Enter async context."""
-        self._client = OpenRouterClient(
+        self._client = NvidiaClient(
             settings=self.settings,
             registry=self.registry,
         )

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # OpenRouter Configuration
     openrouter_api_key: str = ""
-    openrouter_model: str = "moonshotai/kimi-k2.5"
+    openrouter_model: str = "google/gemini-2.0-flash-lite-001"  # Changed from Kimi to prevent accidental usage via OpenRouter
 
     # Specialist Model Configuration
     writing_model: str = "google/gemini-3-flash"
@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     knowledge_model: str = "google/gemini-3-pro"
     frontend_model: str = "anthropic/claude-sonnet-4.5"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
+    # Nvidia Configuration
+    nvidia_api_key: str = ""
+    nvidia_model: str = "moonshotai/kimi-k2.5"
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
 
     # Slack Configuration
     slack_bot_token: str = ""
