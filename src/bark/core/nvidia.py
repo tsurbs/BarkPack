@@ -62,7 +62,7 @@ class NvidiaClient:
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             },
-            timeout=60.0,
+            timeout=180.0,
         )
         return self
 

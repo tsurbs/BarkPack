@@ -111,8 +111,10 @@ key findings, and actionable recommendations. Cite your reasoning."""
 )
 async def research_agent(task: str, context: str = "") -> str:
     try:
+        logger.info(f"Research Agent starting task: {task}")
         settings = get_settings()
         result = await _run_agent(task, context, settings.knowledge_model, RESEARCH_SYSTEM_PROMPT)
+        logger.info("Research Agent completed task")
         return f"**Research Agent Result:**\n\n{result}"
     except Exception as e:
         logger.exception("Research agent failed")
