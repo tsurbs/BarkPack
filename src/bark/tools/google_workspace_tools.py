@@ -133,8 +133,16 @@ def _extract_body(payload: dict) -> str:
 @tool(
     name="gmail_send",
     description=(
-        "Send an email via Gmail. Specify recipient, subject, and body. "
-        "Set html=true to send a rich HTML email (recommended for formatted content).\n\n"
+        "Send an email via Gmail. Specify recipient, subject, and body.\n\n"
+        "━━━ ⚠️ CRITICAL: EMAIL BODY MUST BE HTML ━━━\n"
+        "ALWAYS set html=true. ALWAYS write the body in valid HTML.\n"
+        "NEVER use Markdown in the body — it will appear as raw text to recipients.\n\n"
+        "Example of BROKEN Markdown in emails (what recipients actually see):\n"
+        '  "**Hello!** Here are the *details*:\\n- Item one\\n- Item two\\n[Click here](https://example.com)"\n'
+        "  ↑ Recipients see the literal **, *, -, and []() characters. It looks terrible.\n\n"
+        "Example of CORRECT HTML body:\n"
+        '  "<p><b>Hello!</b> Here are the <i>details</i>:</p><ul><li>Item one</li><li>Item two</li></ul>'
+        '<p><a href=\\"https://example.com\\">Click here</a></p>"\n\n'
         + GMAIL_FORMAT_INSTRUCTIONS
     ),
     parameters={
@@ -144,11 +152,18 @@ def _extract_body(payload: dict) -> str:
             "subject": {"type": "string", "description": "Email subject line"},
             "body": {
                 "type": "string",
-                "description": "Email body — plain text or HTML depending on the html flag",
+                "description": (
+                    "Email body — MUST be valid HTML when html=true. "
+                    "NEVER use Markdown syntax (**, *, -, ##, []()). "
+                    "Use HTML tags: <b>, <i>, <ul><li>, <h3>, <a href=''>, <p>."
+                ),
             },
             "html": {
                 "type": "boolean",
-                "description": "If true, send body as HTML for rich formatting. Default false (plain text).",
+                "description": (
+                    "⚠️ MUST be set to true for formatted emails. "
+                    "When true, body is rendered as HTML. Default false (plain text)."
+                ),
             },
         },
         "required": ["to", "subject", "body"],

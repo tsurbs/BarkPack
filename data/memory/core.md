@@ -258,7 +258,7 @@ Bark can receive and auto-respond to emails sent to **ops+bark@scottylabs.org**.
 
 ### Key Features:
 • **Automatic Reply Loop Prevention**: Bark filters out its own sent messages to avoid infinite reply chains
-• **HTML Email Support**: Responses are formatted in HTML for rich email rendering, with a plain-text fallback
+• **HTML Email Support (MANDATORY)**: ALL email responses MUST be formatted in valid HTML — NEVER use Markdown (**, *, -, ##, []()) in email bodies as it appears as ugly raw text to recipients. Always set html=true when calling gmail_send.
 • **Professional Email Etiquette**: Greetings, sign-offs, and proper quoting of original messages
 • **Signature Block**: Automatic "Bark | ScottyLabs Assistant" signature appended to all replies
 • **Error Recovery**: Exponential back-off on repeated failures; emails only marked as read after successful reply

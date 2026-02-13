@@ -28,25 +28,34 @@ Do NOT use standard Markdown syntax — it will not render correctly in Slack.""
 GMAIL_FORMAT_INSTRUCTIONS = """\
 ⚠️ CRITICAL: ALL email bodies MUST be written in valid HTML. NEVER use Markdown.
 
-Markdown syntax (**, *, -, ##, [](), etc.) does NOT render in email clients
-and will appear as ugly raw text to recipients. Always use HTML tags instead.
+Markdown syntax does NOT render in email clients and will appear as ugly raw
+text to recipients. This is what broken Markdown looks like in an actual email:
 
-When calling gmail_send, ALWAYS set html=true so the HTML body renders correctly.
+    **Welcome!** Here are your *action items*:
+    - Review the **budget** spreadsheet
+    - Submit your [report](https://example.com)
+    ## Next Steps
 
-Use these HTML elements for formatting:
-- Bold: <b>text</b> or <strong>text</strong>  (NOT **text**)
-- Italic: <i>text</i> or <em>text</em>  (NOT _text_ or *text*)
-- Links: <a href="URL">text</a>  (NOT [text](URL))
-- Headings: <h3>heading</h3>  (NOT ## heading)
-- Bullet lists: <ul><li>item</li></ul>  (NOT - item)
-- Numbered lists: <ol><li>item</li></ol>  (NOT 1. item)
+The recipient sees all of that literally — the **, *, -, ##, and []() characters
+are displayed as-is. It looks unprofessional and broken. Always use HTML instead.
+
+When calling gmail_send, you MUST set html=true so the HTML body renders correctly.
+
+MANDATORY — use these HTML elements (never their Markdown equivalents):
+- Bold: <b>text</b> or <strong>text</strong>  (NEVER **text**)
+- Italic: <i>text</i> or <em>text</em>  (NEVER _text_ or *text*)
+- Links: <a href="URL">text</a>  (NEVER [text](URL))
+- Headings: <h3>heading</h3>  (NEVER ## heading)
+- Bullet lists: <ul><li>item</li></ul>  (NEVER - item)
+- Numbered lists: <ol><li>item</li></ol>  (NEVER 1. item)
 - Paragraphs: <p>text</p>
 - Line breaks: <br>
 - Horizontal rule: <hr>
 
 Keep the HTML simple — avoid external CSS, JavaScript, or complex layouts.
 Do NOT use Markdown, Slack mrkdwn, or any non-HTML formatting in email bodies.
-If you catch yourself writing ** or - for formatting, STOP and use HTML tags."""
+If you catch yourself writing **, *, -, ##, or []() for formatting, STOP and
+replace them with the equivalent HTML tags before sending."""
 
 # ---------------------------------------------------------------------------
 # Google Docs  –  plain text (the Docs API handles styling separately)
