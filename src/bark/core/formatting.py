@@ -26,20 +26,27 @@ Do NOT use standard Markdown syntax — it will not render correctly in Slack.""
 # Gmail  –  HTML email bodies
 # ---------------------------------------------------------------------------
 GMAIL_FORMAT_INSTRUCTIONS = """\
-When composing email bodies for Gmail, write valid HTML so the email renders
-with rich formatting. Use these elements:
-- Bold: <b>text</b> or <strong>text</strong>
-- Italic: <i>text</i> or <em>text</em>
-- Links: <a href="URL">text</a>
-- Headings: <h3>heading</h3> (avoid <h1>/<h2> as they look too large in email)
-- Bullet lists: <ul><li>item</li></ul>
-- Numbered lists: <ol><li>item</li></ol>
+⚠️ CRITICAL: ALL email bodies MUST be written in valid HTML. NEVER use Markdown.
+
+Markdown syntax (**, *, -, ##, [](), etc.) does NOT render in email clients
+and will appear as ugly raw text to recipients. Always use HTML tags instead.
+
+When calling gmail_send, ALWAYS set html=true so the HTML body renders correctly.
+
+Use these HTML elements for formatting:
+- Bold: <b>text</b> or <strong>text</strong>  (NOT **text**)
+- Italic: <i>text</i> or <em>text</em>  (NOT _text_ or *text*)
+- Links: <a href="URL">text</a>  (NOT [text](URL))
+- Headings: <h3>heading</h3>  (NOT ## heading)
+- Bullet lists: <ul><li>item</li></ul>  (NOT - item)
+- Numbered lists: <ol><li>item</li></ol>  (NOT 1. item)
 - Paragraphs: <p>text</p>
 - Line breaks: <br>
 - Horizontal rule: <hr>
 
 Keep the HTML simple — avoid external CSS, JavaScript, or complex layouts.
-Do NOT use Markdown or Slack mrkdwn in email bodies."""
+Do NOT use Markdown, Slack mrkdwn, or any non-HTML formatting in email bodies.
+If you catch yourself writing ** or - for formatting, STOP and use HTML tags."""
 
 # ---------------------------------------------------------------------------
 # Google Docs  –  plain text (the Docs API handles styling separately)
