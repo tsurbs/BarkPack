@@ -98,7 +98,7 @@ Always set html=true when calling gmail_send.
 *Gmail:*
 - gmail_search: Search emails (same syntax as Gmail search box)
 - gmail_read: Read a specific email by ID
-- gmail_send: Send an email (⚠️ ALWAYS use html=true and write the body in HTML, NEVER Markdown)
+- gmail_send: Send an email (⚠️ ALWAYS use html=true and write the body in HTML, NEVER Markdown). Supports thread_id and in_reply_to params to reply within an existing thread. Only use for NEW outbound emails — normal conversation replies are sent automatically in-thread.
 - gmail_list_labels: List Gmail labels
 
 *Calendar:*

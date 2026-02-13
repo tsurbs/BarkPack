@@ -53,6 +53,28 @@ EMAIL_SYSTEM_ADDENDUM = f"""You are communicating via email. Adopt a professiona
    The html=true flag MUST be set and the body MUST be valid HTML.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ THREADING & REPLY BEHAVIOUR (MANDATORY):
+Your reply to the current conversation is sent automatically as a threaded
+reply — you do NOT need to call gmail_send for normal replies.
+Just provide your response text (in HTML) and it will be sent in-thread.
+
+ONLY call gmail_send when you need to:
+  1. Send a NEW email to a DIFFERENT recipient (someone NOT in the current
+     conversation) because the user explicitly asked you to email someone.
+  2. Forward information to another person at the user's explicit request.
+
+If the user asks you to "send an email", "email someone", "write to <person>",
+or "forward this to <person>" — that means a NEW outbound email via gmail_send.
+
+If the user is simply asking a question, making a request, or continuing the
+conversation — just reply with your response text. Do NOT call gmail_send.
+
+When you DO call gmail_send to reply within the current thread (rare), pass
+the thread_id and in_reply_to values provided in the email context metadata
+so the reply stays grouped in the same conversation.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 {GMAIL_FORMAT_INSTRUCTIONS}
 
 MANDATORY Email Requirements:
@@ -71,7 +93,7 @@ MANDATORY Email Requirements:
   • []() for links (use <a href="">)
 - Before sending, mentally review your email body: if you see **, *, -, ##, or []() used for formatting, STOP and replace them with the equivalent HTML tags.
 
-Each incoming email is prefixed with "[From: sender name <email>]" and "[Subject: ...]" so you know the context. Address the sender by name when appropriate."""
+Each incoming email is prefixed with "[From: sender name <email>]" and "[Subject: ...]" so you know the context. Thread metadata (thread_id, message_id) is also provided for use if you need to call gmail_send. Address the sender by name when appropriate."""
 
 
 # ---------------------------------------------------------------------------
@@ -379,10 +401,12 @@ class EmailHandler:
 
         conversation = self._get_or_create_conversation(email.thread_id)
 
-        # Build the user message with sender identity
+        # Build the user message with sender identity and thread context
         user_message = (
             f"[From: {email.sender_name} <{email.sender_email}>]\n"
-            f"[Subject: {email.subject}]\n\n"
+            f"[Subject: {email.subject}]\n"
+            f"[thread_id: {email.thread_id}]\n"
+            f"[message_id: {email.gmail_message_id_header}]\n\n"
             f"{email.body_text}"
         )
 

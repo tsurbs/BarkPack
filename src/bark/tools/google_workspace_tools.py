@@ -143,6 +143,14 @@ def _extract_body(payload: dict) -> str:
         "Example of CORRECT HTML body:\n"
         '  "<p><b>Hello!</b> Here are the <i>details</i>:</p><ul><li>Item one</li><li>Item two</li></ul>'
         '<p><a href=\\"https://example.com\\">Click here</a></p>"\n\n'
+        "━━━ THREADING ━━━\n"
+        "To reply within an existing email thread (keep the conversation grouped),\n"
+        "set thread_id to the Gmail thread ID and in_reply_to to the Message-ID\n"
+        "header of the message you are replying to. When replying, prefix the\n"
+        "subject with 'Re: ' if it isn't already.\n\n"
+        "ONLY send a NEW email (without thread_id) when explicitly asked to\n"
+        "compose a fresh email to someone. For ongoing conversations, ALWAYS\n"
+        "reply in-thread.\n\n"
         + GMAIL_FORMAT_INSTRUCTIONS
     ),
     parameters={
@@ -165,12 +173,34 @@ def _extract_body(payload: dict) -> str:
                     "When true, body is rendered as HTML. Default false (plain text)."
                 ),
             },
+            "thread_id": {
+                "type": "string",
+                "description": (
+                    "Gmail thread ID to reply within an existing conversation. "
+                    "When set, the email is grouped with the original thread."
+                ),
+            },
+            "in_reply_to": {
+                "type": "string",
+                "description": (
+                    "RFC 2822 Message-ID of the email being replied to "
+                    "(e.g. '<CAExample@mail.gmail.com>'). Sets In-Reply-To and "
+                    "References headers for proper threading."
+                ),
+            },
         },
         "required": ["to", "subject", "body"],
     },
 )
-def gmail_send(to: str, subject: str, body: str, html: bool = False) -> str:
-    """Send an email."""
+def gmail_send(
+    to: str,
+    subject: str,
+    body: str,
+    html: bool = False,
+    thread_id: str = "",
+    in_reply_to: str = "",
+) -> str:
+    """Send an email, optionally threaded as a reply."""
     auth = get_google_auth()
     svc = auth.gmail
 
@@ -178,9 +208,16 @@ def gmail_send(to: str, subject: str, body: str, html: bool = False) -> str:
     message = MIMEText(body, subtype)
     message["to"] = to
     message["subject"] = subject
+    if in_reply_to:
+        message["In-Reply-To"] = in_reply_to
+        message["References"] = in_reply_to
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
 
-    sent = svc.users().messages().send(userId="me", body={"raw": raw}).execute()
+    send_body: dict[str, str] = {"raw": raw}
+    if thread_id:
+        send_body["threadId"] = thread_id
+
+    sent = svc.users().messages().send(userId="me", body=send_body).execute()
     return f"✅ Email sent! Message ID: `{sent['id']}`"
 
 
