@@ -3,36 +3,32 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy.orm import declarative_base
 
 # Fallback to localhost if not set in .env
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/barkbot")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/barkbot")
 
 # Railway internal PostgreSQL network doesn't support SSL, so we must disable it explicitly
-# if asyncpg attempts to upgrade the connection.
+# if psycopg attempts to upgrade the connection.
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-if "ssl=" not in DATABASE_URL.lower() and "localhost" not in DATABASE_URL.lower():
+if "postgresql+asyncpg://" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
+
+if "sslmode=" not in DATABASE_URL.lower() and "localhost" not in DATABASE_URL.lower():
     join_char = "&" if "?" in DATABASE_URL else "?"
     if "railway.internal" in DATABASE_URL.lower():
-        DATABASE_URL = f"{DATABASE_URL}{join_char}ssl=disable"
+        DATABASE_URL = f"{DATABASE_URL}{join_char}sslmode=disable"
     else:
         # Require SSL for all other remote connections to prevent immediate drops
-        DATABASE_URL = f"{DATABASE_URL}{join_char}ssl=require"
+        DATABASE_URL = f"{DATABASE_URL}{join_char}sslmode=require"
 
 # Create the async engine
 engine = create_async_engine(
     DATABASE_URL, 
     echo=False,
     pool_pre_ping=True,  # Test connections before handing them out
-    pool_recycle=300,    # Recycle connections older than 5 minutes
-    connect_args={
-        "server_settings": {
-            "tcp_keepalives_idle": "60"
-        },
-        "statement_cache_size": 0, # Fix for PgBouncer / Transaction poolers
-        "prepared_statement_cache_size": 0
-    }
+    pool_recycle=300     # Recycle connections older than 5 minutes
 )
 
 # Create an async session maker
