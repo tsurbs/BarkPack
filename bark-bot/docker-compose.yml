@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  postgres:
+    # We use ankane/pgvector which is the official docker image for pgvector
+    image: ankane/pgvector:latest
+    container_name: barkbot_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: barkbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - barkbot_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  garage:
+    image: dxflrs/garage:v1.0.0
+    container_name: barkbot_garage
+    command: /garage server
+    ports:
+      - "3900:3900" # S3 API
+      - "3902:3902" # Web API
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - barkbot_garagedata:/var/lib/garage
+    restart: unless-stopped
+
+volumes:
+  barkbot_pgdata:
+  barkbot_garagedata:

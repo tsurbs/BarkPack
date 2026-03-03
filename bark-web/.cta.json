@@ -1,0 +1,25 @@
+{
+  "projectName": "bark-web",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "bun",
+  "includeExamples": true,
+  "tailwind": true,
+  "addOnOptions": {},
+  "envVarValues": {},
+  "git": false,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react-cra",
+  "chosenAddOns": [
+    "biome",
+    "railway",
+    "ai",
+    "db",
+    "compiler",
+    "better-auth",
+    "posthog",
+    "tanstack-query",
+    "store"
+  ]
+}
