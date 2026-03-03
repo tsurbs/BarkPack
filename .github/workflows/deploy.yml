@@ -1,0 +1,52 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy bark-bot (Python Backend)
+        run: railway up -d --service bark-bot
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_BACKEND }}
+        working-directory: ./bark-bot
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy bark-web (React Frontend)
+        run: railway up -d --service bark-web
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_FRONTEND }}
+        working-directory: ./bark-web
+
+  deploy-garage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy garage (S3 Storage)
+        run: railway up -d --service garage
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_BACKEND }}
+        working-directory: ./bark-bot/garage-deploy

@@ -1,5 +1,6 @@
 import os
 import asyncio
+import traceback
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from slack_sdk.signature import SignatureVerifier
 from slack_sdk import WebClient
@@ -103,6 +104,8 @@ async def process_slack_message(event: dict):
                 break
 
     except Exception as e:
+        print(f"[Slack Error] Internal Server Error during message processing:")
+        traceback.print_exc()
         error_text = f"🚨 *System Error*: I encountered a critical fault while processing your request: `{str(e)}`"
         try:
             await asyncio.to_thread(
