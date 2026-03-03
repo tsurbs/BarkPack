@@ -15,9 +15,9 @@ elif DATABASE_URL.startswith("postgresql://"):
 if "postgresql+asyncpg://" in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
 
-if "sslmode=" not in DATABASE_URL.lower() and "localhost" not in DATABASE_URL.lower():
+if "sslmode=" not in DATABASE_URL.lower() and "localhost" not in DATABASE_URL.lower() and ".railway.internal" not in DATABASE_URL.lower():
     join_char = "&" if "?" in DATABASE_URL else "?"
-    # Require SSL for all remote connections to prevent immediate drops and HTTP rejections
+    # Require SSL for all remote connections except Railway internal network to prevent immediate drops and HTTP rejections
     DATABASE_URL = f"{DATABASE_URL}{join_char}sslmode=require"
 
 # Create the async engine
