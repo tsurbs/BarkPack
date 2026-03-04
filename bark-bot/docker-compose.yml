@@ -15,18 +15,19 @@ services:
       - barkbot_pgdata:/var/lib/postgresql/data
     restart: unless-stopped
 
-  garage:
-    image: dxflrs/garage:v1.0.0
-    container_name: barkbot_garage
-    command: /garage server
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: barkbot_rustfs
     ports:
-      - "3900:3900" # S3 API
-      - "3902:3902" # Web API
+      - "9000:9000"
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
     volumes:
-      - ./garage.toml:/etc/garage.toml:ro
-      - barkbot_garagedata:/var/lib/garage
+      - barkbot_rustfsdata:/data
+    command: ["--access-key", "rustfsadmin", "--secret-key", "rustfsadmin", "/data"]
     restart: unless-stopped
 
 volumes:
   barkbot_pgdata:
-  barkbot_garagedata:
+  barkbot_rustfsdata:

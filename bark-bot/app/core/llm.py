@@ -16,7 +16,7 @@ client = AsyncOpenAI(
     api_key=OPENROUTER_API_KEY,
 )
 
-async def generate_response(messages: list[dict], tools: list[dict] = None, model: str = "moonshotai/kimi-k2.5", db: AsyncSession = None, conversation_id: str = None) -> dict:
+async def generate_response(messages: list[dict], tools: list[dict] = None, model: str = "z-ai/glm-5", db: AsyncSession = None, conversation_id: str = None) -> dict:
     """
     Generate a response using OpenRouter, supporting tools.
     """

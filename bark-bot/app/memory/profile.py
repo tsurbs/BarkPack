@@ -24,7 +24,7 @@ async def generate_user_profile(db: AsyncSession, user_id: str, conversation_id:
     {chat_text}
     """
     
-    response = await generate_response([{"role": "user", "content": prompt}], model="moonshotai/kimi-k2.5")
+    response = await generate_response([{"role": "user", "content": prompt}], model="z-ai/glm-5")
     summary = response.get("content", "")
     
     # In a full implementation, we would save this `summary` to a UserProfile table 

@@ -53,20 +53,23 @@ async def process_slack_message(event: dict):
 
     current_agent = "bark_bot"
     messages = [Message(role="user", content=augmented_text)]
+    added_reactions = set()
 
     try:
         while True:
             # React to the user's original message with the active agent's emoji
             emoji = agent_emojis.get(current_agent, "robot_face")
-            try:
-                await asyncio.to_thread(
-                    slack_client.reactions_add,
-                    channel=channel_id,
-                    timestamp=event.get("ts"),
-                    name=emoji
-                )
-            except SlackApiError:
-                pass  # Ignore if we already reacted with this emoji
+            if emoji not in added_reactions:
+                try:
+                    await asyncio.to_thread(
+                        slack_client.reactions_add,
+                        channel=channel_id,
+                        timestamp=event.get("ts"),
+                        name=emoji
+                    )
+                    added_reactions.add(emoji)
+                except SlackApiError:
+                    pass  # Ignore if we already reacted with this emoji
 
             req = ChatRequest(
                 messages=messages,
@@ -74,18 +77,37 @@ async def process_slack_message(event: dict):
                 agent_id=current_agent
             )
 
-            # Resolve Orchestrator with a DB Session
+            # Callback to stream intermediate LLM text to the user
+            async def send_intermediate(text: str):
+                try:
+                    await asyncio.to_thread(
+                        slack_client.chat_postMessage,
+                        channel=channel_id,
+                        text=text,
+                        thread_ts=thread_ts
+                    )
+                except SlackApiError as e:
+                    print(f"[Slack Error] Failed to post intermediate message: {e.response['error']}")
+
             async with AsyncSessionLocal() as db:
-                # Note: We generate a deterministic conversation ID based on the Slack thread_ts 
-                # so that subsequent replies in the same thread are chunked into the same DB Conversation.
                 conversation_id = f"slack_thread_{thread_ts}"
-                response = await handle_chat_request(req, db=db, conversation_id=conversation_id)
+                response = await handle_chat_request(req, db=db, conversation_id=conversation_id, on_intermediate_response=send_intermediate)
                 
             final_text = response.message.content
-            
-            # Send message back to Slack Async
+
+            # Check if Orchestrator initiated a Handoff — skip posting the
+            # internal routing message and loop to the target agent instead.
+            if response.agent_id and response.agent_id != current_agent:
+                current_agent = response.agent_id
+                messages = []
+                continue
+
+            # If the LLM decided no reply is needed, silently exit
+            if response.no_reply:
+                break
+
+            # Send the final response back to Slack
             try:
-                # We must use asyncio.to_thread because the slack_sdk webclient is currently synchronous here
                 await asyncio.to_thread(
                     slack_client.chat_postMessage,
                     channel=channel_id,
@@ -95,13 +117,21 @@ async def process_slack_message(event: dict):
             except SlackApiError as e:
                 print(f"[Slack Error] Failed to post message: {e.response['error']}")
 
-            # Check if Orchestrator initiated a Handoff
-            if response.agent_id and response.agent_id != current_agent:
-                current_agent = response.agent_id
-                messages = []  # Clear messages for the new agent context so we don't duplicate the initial prompt
-                continue
-            else:
-                break
+            # Upload any file attachments natively into the thread
+            if response.attachments:
+                for att in response.attachments:
+                    try:
+                        await asyncio.to_thread(
+                            slack_client.files_upload_v2,
+                            channel=channel_id,
+                            file=att.file_path,
+                            filename=att.filename,
+                            thread_ts=thread_ts
+                        )
+                    except Exception as att_err:
+                        print(f"[Slack Error] Failed to upload attachment '{att.filename}': {att_err}")
+
+            break
 
     except Exception as e:
         print(f"[Slack Error] Internal Server Error during message processing:")
@@ -116,6 +146,18 @@ async def process_slack_message(event: dict):
             )
         except SlackApiError:
             pass
+    finally:
+        # Remove any reaction emojis we added once processing is completely done
+        for emoji in added_reactions:
+            try:
+                await asyncio.to_thread(
+                    slack_client.reactions_remove,
+                    channel=channel_id,
+                    timestamp=event.get("ts"),
+                    name=emoji
+                )
+            except SlackApiError:
+                pass
 
 
 @router.post("/events")

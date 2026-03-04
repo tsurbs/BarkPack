@@ -49,3 +49,11 @@ class APILog(Base):
     event_type = Column(String) # 'openrouter_request', 'openrouter_response', 'tool_request', 'tool_response'
     payload = Column(Text) # JSON serialized data
     created_at = Column(DateTime, default=utcnow)
+
+class ContextSummary(Base):
+    __tablename__ = "context_summaries"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    conversation_id = Column(String, ForeignKey("conversations.id"), index=True)
+    summary = Column(Text)
+    messages_summarized = Column(String)  # Integer count of messages compressed
+    created_at = Column(DateTime, default=utcnow)

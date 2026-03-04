@@ -77,14 +77,18 @@ Replace the mock logic in the agent tools with actual third-party API SDK calls.
 - **[app/tools/google_workspace_tools.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/tools/google_workspace_tools.py)**: [MODIFY] Connect the 10 granular Workspace tools to the `google-api-python-client` using the established OAuth 2.0 refresh token.
 - **Dependencies**: [NEW] Add `notion-client`, `httpx`, `PyGithub` (and potentially others) via `uv`.
 
-## Phase 7: S3 / Garage File Publishing
-Allow the Base Agent to upload files to a local S3-compatible object store (Garage) and generate public links for the user.
+## Phase 7: S3 / RustFS File Publishing
+Allow the Base Agent to upload files to a local S3-compatible object store (RustFS) and generate public links for the user.
 
 ### Proposed Changes
-- **[docker-compose.yml](file:///Users/tsumacpro/BarkPack/bark-bot/docker-compose.yml)**: [MODIFY] Add `garage` service using `dxflrs/garage:v0.9.1` covering ports 3900 (S3 API) and 3902 (Web). Add a bash script/init container to automatically generate access keys and create a `barkbot-public` bucket with public read access.
-- **`app/tools/s3_tools.py`**: [NEW] Create `UploadToS3Tool` using `boto3`. Uses custom endpoint `http://localhost:3900` to upload files, returning the public URL on port 3902.
+- **[docker-compose.yml](file:///Users/tsumacpro/BarkPack/bark-bot/docker-compose.yml)**: [MODIFY] Add `rustfs` service using `rustfs/rustfs:latest` on port 9000 (S3 API). Credentials configured via env vars.
+- **`app/tools/s3_tools.py`**: [NEW] Create `UploadToS3Tool` using `boto3`. Uses custom endpoint `http://localhost:9000` to upload files, returning pre-signed URLs.
 - **[app/core/orchestrator.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/core/orchestrator.py)**: [MODIFY] Register the S3 tool.
 - **[app/agents/bark_bot.yaml](file:///Users/tsumacpro/BarkPack/bark-bot/app/agents/bark_bot.yaml)**: [MODIFY] Add `upload_to_s3` to the base agent's active tools.
+
+## Recent Enhancements (Autonomous Orchestrator)
+- **[app/agents/bark_bot.yaml](file:///Users/tsumacpro/BarkPack/bark-bot/app/agents/bark_bot.yaml)**: [MODIFY] Granted the `bark_bot` access to all 37 tools across the workspace and updated its system prompt to act autonomously, perform tasks directly, and log frequently, only handing off for extremely specialized/complex work.
+- **[app/surfaces/slack.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/surfaces/slack.py)**: [MODIFY] Added comprehensive reaction management tracking to ensure that the bot's "thinking" emojis are cleanly removed in a `finally` block once the orchestrator finishes processing.
 
 ## User Review Required
 > [!IMPORTANT]

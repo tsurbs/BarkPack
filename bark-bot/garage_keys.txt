@@ -1,8 +1,0 @@
-Key name: barkbot
-Key ID: GK9cb653f4923c7b978eab8cf3
-Secret key: 6bfc916f364817c8704fcef0d6ee7f0511ecbb10877980def0414ef4d2d4acc1
-Can create buckets: false
-
-Key-specific bucket aliases:
-
-Authorized buckets:
