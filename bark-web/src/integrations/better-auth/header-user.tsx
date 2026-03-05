@@ -1,45 +1,55 @@
-import { authClient } from '#/lib/auth-client'
-import { Link } from '@tanstack/react-router'
+import { authClient } from "../../lib/auth-client";
+import { User, LogOut } from "lucide-react";
 
 export default function BetterAuthHeader() {
-  const { data: session, isPending } = authClient.useSession()
+    const { data: session, isPending } = authClient.useSession();
 
-  if (isPending) {
+    if (isPending) {
+        return <div className="text-xs text-black-400">Loading auth...</div>;
+    }
+
+    if (!session) {
+        return (
+            <button
+                type="button"
+                onClick={() => authClient.signIn.social({ provider: "google" })}
+                className="flex items-center gap-2 p-2 text-sm font-medium text-black-600 hover:bg-black-50 rounded-lg transition-colors w-full"
+            >
+                <User size={16} />
+                Sign In
+            </button>
+        );
+    }
+
     return (
-      <div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
-    )
-  }
-
-  if (session?.user) {
-    return (
-      <div className="flex items-center gap-2">
-        {session.user.image ? (
-          <img src={session.user.image} alt="" className="h-8 w-8" />
-        ) : (
-          <div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-              {session.user.name?.charAt(0).toUpperCase() || 'U'}
-            </span>
-          </div>
-        )}
-        <button
-          onClick={() => {
-            void authClient.signOut()
-          }}
-          className="flex-1 h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-        >
-          Sign out
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <Link
-      to="/demo/better-auth"
-      className="h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors inline-flex items-center"
-    >
-      Sign in
-    </Link>
-  )
+        <div className="flex items-center justify-between gap-2 p-2 bg-black-50 rounded-lg">
+            <div className="flex items-center gap-2 overflow-hidden">
+                {session.user.image ? (
+                    <img
+                        src={session.user.image}
+                        alt={session.user.name}
+                        className="w-8 h-8 rounded-full border border-black-100"
+                    />
+                ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                        {session.user.name[0]}
+                    </div>
+                )}
+                <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm font-bold truncate">{session.user.name}</span>
+                    <span className="text-xs text-black-400 truncate">
+                        {session.user.email}
+                    </span>
+                </div>
+            </div>
+            <button
+                type="button"
+                onClick={() => authClient.signOut()}
+                className="p-2 text-black-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title="Sign Out"
+            >
+                <LogOut size={16} />
+            </button>
+        </div>
+    );
 }

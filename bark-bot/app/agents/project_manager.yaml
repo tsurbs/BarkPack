@@ -1,4 +1,5 @@
 id: "project_manager"
+version: 1
 name: "GitHub Project Manager"
 description: "Project management agent that tracks tickets, reads specs, and manages sprints using GitHub Projects and Issues."
 system_prompt: |

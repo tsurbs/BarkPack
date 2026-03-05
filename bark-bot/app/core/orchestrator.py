@@ -8,6 +8,7 @@ from app.models.user import User
 from app.agents.base import AgentLoader, Agent
 from app.tools.core_tools import ReadFileTool, SearchTool
 from app.tools.load_skill import LoadSkillTool
+from app.tools.skill_tools import ManageSkillTool
 from app.tools.memory_tools import CreateAgentPostTool, SearchAgentPostsTool, ListPastConversationsTool, ReadConversationTool
 from app.tools.execution_tools import ExecuteBashTool, ExecutePythonScriptTool
 from app.tools.file_tools import WriteFileTool
@@ -30,7 +31,11 @@ from app.core.context_compression import compress_context
 from sqlalchemy.ext.asyncio import AsyncSession
 
 agent_loader = AgentLoader()
-agent_loader.load_all()
+
+async def ensure_agents_initialized():
+    """Ensure agent_loader has been initialized with S3 sync."""
+    if not agent_loader._initialized:
+        await agent_loader.initialize()
 
 # Dummy Orchestrator User logic
 mock_user = User(id="orchestrator", roles=["admin"])
@@ -61,6 +66,9 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
     Main dynamic orchestrator.
     Routes to the correct agent, supports tools and sub-agent handoffs.
     """
+    # Ensure agents are loaded from S3
+    await ensure_agents_initialized()
+
     # 1. Determine active agent
     agent_id = request.agent_id or "bark_bot"
     active_agent = agent_loader.get_agent(agent_id)
@@ -112,6 +120,10 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
     valid_agents = list(agent_loader.agents.keys())
     load_skill_tool.description = f"Load additional tools and instructions into your context to handle specialized requests. Valid skills are: {', '.join(valid_agents)}."
     master_tool_registry[load_skill_tool.name] = load_skill_tool
+
+    # Add Manage Skill Tool
+    manage_skill_tool = ManageSkillTool(agent_loader=agent_loader)
+    master_tool_registry[manage_skill_tool.name] = manage_skill_tool
 
     if not active_agent:
         system_prompt = "You are Bark Bot. An intelligent orchestrated AI."

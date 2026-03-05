@@ -1,15 +1,68 @@
 @import "tailwindcss";
 
-body {
-  @apply m-0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+  --color-black-50: hsl(0, 0%, 97%);
+  --color-black-100: hsl(0, 0%, 93%);
+  --color-black-200: hsl(0, 0%, 89%);
+  --color-black-300: hsl(0, 0%, 70%);
+  --color-black-400: hsl(0, 0%, 50%);
+  --color-black-500: hsl(0, 0%, 35%);
+  --color-black-900: hsl(0, 0%, 0%);
+  --color-blue-50: hsl(200, 23%, 97%);
+  --color-blue-300: hsl(230, 50%, 80%);
+  --color-blue-600: hsl(226, 76%, 50%);
+  --color-red-500: hsl(0, 70%, 50%);
+
+  --radius-base: 10px;
+  --radius-lg: 40px;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --brand-gradient: linear-gradient(90deg, #ff004e 0%, #4f2485 54%, #40d2fc 100%);
+  }
+
+  body {
+    @apply m-0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: white;
+    color: var(--color-black-900);
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+.scotty-card {
+  @apply bg-white border border-black-100 relative overflow-hidden;
+  border-radius: var(--radius-base);
+}
+
+.scotty-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: black;
+  opacity: 0.8;
+}
+
+.scotty-tab {
+  transition: 0.5s cubic-bezier(0.27, 1.32, 0.41, 1);
+}
+
+.scotty-button {
+  transition: 0.15s transform;
+  border-radius: var(--radius-lg);
+}
+
+.scotty-button:hover {
+  transform: scale(1.05);
 }

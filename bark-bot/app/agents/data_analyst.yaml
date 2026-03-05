@@ -1,4 +1,5 @@
 id: "data_analyst"
+version: 1
 name: "Data Analyst"
 description: "Data Analyst agent that writes and executes Python code locally to analyze data."
 system_prompt: |

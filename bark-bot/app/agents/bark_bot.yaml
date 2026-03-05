@@ -1,4 +1,5 @@
 id: "bark_bot"
+version: 1
 name: "Bark Bot Base Orchestrator"
 description: "The primary AI companion. Energetic and helpful out of the box. Can perform tasks directly or delegate."
 system_prompt: |
@@ -29,6 +30,7 @@ active_tools:
   - "find_calendar_freebusy"
   - "generate_image"
   - "load_skill"
+  - "manage_skill"
   - "list_past_conversations"
   - "list_s3_bucket"
   - "list_slack_channels"

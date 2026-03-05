@@ -1,4 +1,5 @@
 id: "memory_summarizer"
+version: 1
 name: "Memory & Context Summarizer"
 description: "Background agent that processes recent conversation logs to extract distinct facts, attributes, and long-term user profile data."
 system_prompt: |

@@ -1,4 +1,5 @@
 id: "knowledge_retriever"
+version: 1
 name: "Knowledge Retriever"
 description: "Agent responsible for fetching factual data from internal wikis (Notion), web search (Tavily), or web scraping (Firecrawl)."
 system_prompt: |

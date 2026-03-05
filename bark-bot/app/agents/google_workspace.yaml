@@ -1,4 +1,5 @@
 id: "google_workspace"
+version: 1
 name: "Google Workspace Admin"
 description: "A comprehensive Google Workspace agent capable of provisioning users, scheduling, managing files in Drive, generating Docs/Sheets, and reading email."
 system_prompt: |

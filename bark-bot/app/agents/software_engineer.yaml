@@ -1,4 +1,5 @@
 id: "software_engineer"
+version: 1
 name: "Software Engineer"
 description: "Software Engineer agent capable of reading/writing code, navigating git repositories, and deploying to Railway."
 system_prompt: |
