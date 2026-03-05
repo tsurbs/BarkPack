@@ -86,9 +86,43 @@ Allow the Base Agent to upload files to a local S3-compatible object store (Rust
 - **[app/core/orchestrator.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/core/orchestrator.py)**: [MODIFY] Register the S3 tool.
 - **[app/agents/bark_bot.yaml](file:///Users/tsumacpro/BarkPack/bark-bot/app/agents/bark_bot.yaml)**: [MODIFY] Add `upload_to_s3` to the base agent's active tools.
 
-## Recent Enhancements (Autonomous Orchestrator)
+## Recent Enhancements
+
+### Autonomous Orchestrator
 - **[app/agents/bark_bot.yaml](file:///Users/tsumacpro/BarkPack/bark-bot/app/agents/bark_bot.yaml)**: [MODIFY] Granted the `bark_bot` access to all 37 tools across the workspace and updated its system prompt to act autonomously, perform tasks directly, and log frequently, only handing off for extremely specialized/complex work.
+- **[app/core/orchestrator.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/core/orchestrator.py)**: [MODIFY] Added a response guarantee — the orchestrator now always provides a final text response, even in cases of handoff or tool call errors, preventing silent failures.
+
+### Image Generation Tool
+- **[app/tools/image_tools.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/tools/image_tools.py)**: [NEW] `GenerateImageTool` that uses OpenRouter's `google/gemini-3.1-flash-image-preview` model to generate images from text prompts. The tool saves the image locally and returns it as a file attachment (via the `__ATTACHMENT__` protocol) for native display in the chat surface.
+- **[app/agents/bark_bot.yaml](file:///Users/tsumacpro/BarkPack/bark-bot/app/agents/bark_bot.yaml)**: [MODIFY] Registered `generate_image` in the agent's active tools.
+
+### Context Compression
+- **[app/core/context_compression.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/core/context_compression.py)**: [NEW] Automatic context compression module. When conversation history exceeds a configurable token threshold, older messages are summarised via a cheap LLM call (`openrouter/auto`) and replaced with a compressed summary. Summaries are cached in the `context_summaries` DB table for reuse. The 10 most recent messages are always protected from compression.
+- **[app/db/models.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/db/models.py)**: [MODIFY] Added `ContextSummary` model with `conversation_id`, `summary`, `messages_summarized`, and `created_at` columns.
+- **[app/core/orchestrator.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/core/orchestrator.py)**: [MODIFY] Integrated `compress_context()` into the orchestrator pipeline to automatically compress before each LLM call.
+
+### Slack File Attachments
+- **[app/tools/attachment_tools.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/tools/attachment_tools.py)**: [MODIFY] Updated `AttachFileTool` to accept local file paths instead of requiring an intermediate S3 upload.
+- **[app/models/schemas.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/models/schemas.py)**: [MODIFY] Added file path support to `ChatResponse` schema.
+- **[app/surfaces/slack.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/surfaces/slack.py)**: [MODIFY] Slack surface now uploads local files directly to Slack using `files_upload_v2`, bypassing S3. Also enforces a strict no-reply policy so the bot stays silent for messages that do not require a response.
+
+### Slack Surface Improvements
 - **[app/surfaces/slack.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/surfaces/slack.py)**: [MODIFY] Added comprehensive reaction management tracking to ensure that the bot's "thinking" emojis are cleanly removed in a `finally` block once the orchestrator finishes processing.
+- **[app/surfaces/slack.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/surfaces/slack.py)**: [MODIFY] Removed multi-reply / streaming feature for Slack to simplify message delivery.
+- **[app/surfaces/slack.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/surfaces/slack.py)**: [MODIFY] Fixed Slack event handling so events are properly received and responded to.
+
+### S3 Migration: Garage → RustFS
+- **[docker-compose.yml](file:///Users/tsumacpro/BarkPack/bark-bot/docker-compose.yml)**: [MODIFY] Replaced Garage S3 service with `rustfs/rustfs:latest` on port 9000.
+- **[rustfs-deploy/](file:///Users/tsumacpro/BarkPack/bark-bot/rustfs-deploy/)**: [NEW] Railway deployment directory with Dockerfile and entrypoint script for the RustFS service.
+- **[scripts/setup_rustfs.sh](file:///Users/tsumacpro/BarkPack/bark-bot/scripts/setup_rustfs.sh)**: [NEW] Local development setup script for RustFS.
+- **[app/tools/s3_tools.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/tools/s3_tools.py)**: [MODIFY] Updated S3 client configuration to use RustFS defaults. Fixed presigned URL generation issues (payload signing, chunked encoding, checksums).
+
+### Railway Deployment
+- **[railway.toml](file:///Users/tsumacpro/BarkPack/bark-bot/railway.toml)**: [MODIFY] Added a pre-deploy step to automatically initialize the database on each deployment.
+- **[app/db/session.py](file:///Users/tsumacpro/BarkPack/bark-bot/app/db/session.py)**: [MODIFY] Fixed Railway PostgreSQL connection by enforcing `sslmode=require` for all connections, resolving proxy-related HTTP negotiation errors.
+
+### Codebase Quality
+- Repository-wide cleanup: removed emojis, unnecessary print statements, and commented-out code from AI-generated files to improve overall maintainability.
 
 ## User Review Required
 > [!IMPORTANT]

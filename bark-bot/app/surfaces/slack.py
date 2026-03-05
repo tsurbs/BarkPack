@@ -51,6 +51,48 @@ async def process_slack_message(event: dict):
         "memory_summarizer": "floppy_disk"
     }
 
+    tool_emojis = {
+        "read_file": "page_facing_up",
+        "search_tool": "mag",
+        "write_file": "pencil",
+        "execute_bash": "desktop_computer",
+        "execute_python_script": "snake",
+        "handoff": "twisted_rightwards_arrows",
+        "web_search_tavily": "globe_with_meridians",
+        "crawl_website_firecrawl": "spider_web",
+        "search_notion": "notebook",
+        "read_notion_page": "notebook",
+        "read_gmail_messages": "email",
+        "send_gmail": "email",
+        "draft_gmail": "email",
+        "create_calendar_event": "calendar",
+        "find_calendar_freebusy": "calendar",
+        "search_drive_files": "file_folder",
+        "modify_drive_permissions": "file_folder",
+        "create_google_doc": "page_with_curl",
+        "read_google_doc": "page_with_curl",
+        "update_google_sheet": "bar_chart",
+        "read_google_sheet": "bar_chart",
+        "search_github_issues": "octocat",
+        "create_github_issue": "octocat",
+        "update_github_project_status": "octocat",
+        "upload_to_s3": "package",
+        "list_s3_bucket": "package",
+        "send_slack_message": "speech_balloon",
+        "list_slack_channels": "speech_balloon",
+        "attach_file": "paperclip",
+        "create_agent_post": "memo",
+        "search_agent_posts": "memo",
+        "list_past_conversations": "books",
+        "read_conversation": "books",
+        "railway_deploy": "rocket",
+        "summarize_conversation": "brain",
+        "update_user_profile": "brain",
+        "subscribe_workspace_events": "bell",
+        "manage_cloud_identity_groups": "bell",
+        "generate_image": "art",
+    }
+
     current_agent = "bark_bot"
     messages = [Message(role="user", content=augmented_text)]
     added_reactions = set()
@@ -89,9 +131,24 @@ async def process_slack_message(event: dict):
                 except SlackApiError as e:
                     print(f"[Slack Error] Failed to post intermediate message: {e.response['error']}")
 
+            # Callback to react with a tool-specific emoji when a tool is invoked
+            async def on_tool_call(tool_name: str):
+                emoji = tool_emojis.get(tool_name, "gear")
+                if emoji not in added_reactions:
+                    try:
+                        await asyncio.to_thread(
+                            slack_client.reactions_add,
+                            channel=channel_id,
+                            timestamp=event.get("ts"),
+                            name=emoji
+                        )
+                        added_reactions.add(emoji)
+                    except SlackApiError:
+                        pass
+
             async with AsyncSessionLocal() as db:
                 conversation_id = f"slack_thread_{thread_ts}"
-                response = await handle_chat_request(req, db=db, conversation_id=conversation_id, on_intermediate_response=send_intermediate)
+                response = await handle_chat_request(req, db=db, conversation_id=conversation_id, on_intermediate_response=send_intermediate, on_tool_call=on_tool_call)
                 
             final_text = response.message.content
 

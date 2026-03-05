@@ -21,6 +21,7 @@ from app.tools.google_workspace_tools import (
     UpdateGoogleSheetTool, ReadGoogleSheetTool, SubscribeWorkspaceEventsTool, ManageCloudIdentityGroupsTool
 )
 from app.tools.s3_tools import UploadToS3Tool, ListS3BucketTool
+from app.tools.image_tools import GenerateImageTool
 from app.tools.slack_tools import SendSlackMessageTool, ListSlackChannelsTool
 from app.tools.attachment_tools import AttachFileTool
 from app.tools.utils import get_openai_tools_schema
@@ -55,7 +56,7 @@ Not every message requires a response. If the user's message does NOT require an
 Do NOT reply with pleasantries, confirmations, or filler. If you are not providing genuine, substantive value, respond with __NO_REPLY__ and nothing else.
 """
 
-async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, conversation_id: str = None, on_intermediate_response: Optional[Callable[[str], Awaitable[None]]] = None) -> ChatResponse:
+async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, conversation_id: str = None, on_intermediate_response: Optional[Callable[[str], Awaitable[None]]] = None, on_tool_call: Optional[Callable[[str], Awaitable[None]]] = None) -> ChatResponse:
     """
     Main dynamic orchestrator.
     Routes to the correct agent, supports tools and sub-agent handoffs.
@@ -102,7 +103,8 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
         ListS3BucketTool(),
         SendSlackMessageTool(),
         ListSlackChannelsTool(),
-        AttachFileTool()
+        AttachFileTool(),
+        GenerateImageTool()
     ]}
 
     # Add Handoff Tool dynamically
@@ -196,6 +198,10 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
         for tc in response_dict["tool_calls"]:
             func_name = tc["function"]["name"]
             func_args_str = tc["function"]["arguments"]
+
+            # Notify the surface that a tool is about to be called
+            if on_tool_call:
+                await on_tool_call(func_name)
             
             if db and conversation_id:
                 from app.memory.history import log_api_event

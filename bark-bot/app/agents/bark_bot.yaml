@@ -27,6 +27,7 @@ active_tools:
   - "execute_bash"
   - "execute_python_script"
   - "find_calendar_freebusy"
+  - "generate_image"
   - "handoff"
   - "list_past_conversations"
   - "list_s3_bucket"
