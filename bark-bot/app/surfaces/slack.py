@@ -57,7 +57,7 @@ async def process_slack_message(event: dict):
         "write_file": "pencil",
         "execute_bash": "desktop_computer",
         "execute_python_script": "snake",
-        "handoff": "twisted_rightwards_arrows",
+        "load_skill": "jigsaw",
         "web_search_tavily": "globe_with_meridians",
         "crawl_website_firecrawl": "spider_web",
         "search_notion": "notebook",
@@ -97,10 +97,46 @@ async def process_slack_message(event: dict):
     messages = [Message(role="user", content=augmented_text)]
     added_reactions = set()
 
+    current_agent = "bark_bot"
+    messages = [Message(role="user", content=augmented_text)]
+    added_reactions = set()
+
     try:
-        while True:
-            # React to the user's original message with the active agent's emoji
-            emoji = agent_emojis.get(current_agent, "robot_face")
+        # React to the user's original message with the active agent's emoji
+        emoji = agent_emojis.get(current_agent, "robot_face")
+        if emoji not in added_reactions:
+            try:
+                await asyncio.to_thread(
+                    slack_client.reactions_add,
+                    channel=channel_id,
+                    timestamp=event.get("ts"),
+                    name=emoji
+                )
+                added_reactions.add(emoji)
+            except SlackApiError:
+                pass  # Ignore if we already reacted with this emoji
+
+        req = ChatRequest(
+            messages=messages,
+            user_id=f"slack_{user_id}",  # Prefix identity to avoid collision
+            agent_id=current_agent
+        )
+
+        # Callback to stream intermediate LLM text to the user
+        async def send_intermediate(text: str):
+            try:
+                await asyncio.to_thread(
+                    slack_client.chat_postMessage,
+                    channel=channel_id,
+                    text=text,
+                    thread_ts=thread_ts
+                )
+            except SlackApiError as e:
+                print(f"[Slack Error] Failed to post intermediate message: {e.response['error']}")
+
+        # Callback to react with a tool-specific emoji when a tool is invoked
+        async def on_tool_call(tool_name: str):
+            emoji = tool_emojis.get(tool_name, "gear")
             if emoji not in added_reactions:
                 try:
                     await asyncio.to_thread(
@@ -111,58 +147,16 @@ async def process_slack_message(event: dict):
                     )
                     added_reactions.add(emoji)
                 except SlackApiError:
-                    pass  # Ignore if we already reacted with this emoji
+                    pass
 
-            req = ChatRequest(
-                messages=messages,
-                user_id=f"slack_{user_id}",  # Prefix identity to avoid collision
-                agent_id=current_agent
-            )
+        async with AsyncSessionLocal() as db:
+            conversation_id = f"slack_thread_{thread_ts}"
+            response = await handle_chat_request(req, db=db, conversation_id=conversation_id, on_intermediate_response=send_intermediate, on_tool_call=on_tool_call)
+            
+        final_text = response.message.content
 
-            # Callback to stream intermediate LLM text to the user
-            async def send_intermediate(text: str):
-                try:
-                    await asyncio.to_thread(
-                        slack_client.chat_postMessage,
-                        channel=channel_id,
-                        text=text,
-                        thread_ts=thread_ts
-                    )
-                except SlackApiError as e:
-                    print(f"[Slack Error] Failed to post intermediate message: {e.response['error']}")
-
-            # Callback to react with a tool-specific emoji when a tool is invoked
-            async def on_tool_call(tool_name: str):
-                emoji = tool_emojis.get(tool_name, "gear")
-                if emoji not in added_reactions:
-                    try:
-                        await asyncio.to_thread(
-                            slack_client.reactions_add,
-                            channel=channel_id,
-                            timestamp=event.get("ts"),
-                            name=emoji
-                        )
-                        added_reactions.add(emoji)
-                    except SlackApiError:
-                        pass
-
-            async with AsyncSessionLocal() as db:
-                conversation_id = f"slack_thread_{thread_ts}"
-                response = await handle_chat_request(req, db=db, conversation_id=conversation_id, on_intermediate_response=send_intermediate, on_tool_call=on_tool_call)
-                
-            final_text = response.message.content
-
-            # Check if Orchestrator initiated a Handoff — skip posting the
-            # internal routing message and loop to the target agent instead.
-            if response.agent_id and response.agent_id != current_agent:
-                current_agent = response.agent_id
-                messages = []
-                continue
-
-            # If the LLM decided no reply is needed, silently exit
-            if response.no_reply:
-                break
-
+        # If the LLM decided no reply is needed, silently exit
+        if not response.no_reply:
             # Send the final response back to Slack
             try:
                 await asyncio.to_thread(
@@ -174,21 +168,19 @@ async def process_slack_message(event: dict):
             except SlackApiError as e:
                 print(f"[Slack Error] Failed to post message: {e.response['error']}")
 
-            # Upload any file attachments natively into the thread
-            if response.attachments:
-                for att in response.attachments:
-                    try:
-                        await asyncio.to_thread(
-                            slack_client.files_upload_v2,
-                            channel=channel_id,
-                            file=att.file_path,
-                            filename=att.filename,
-                            thread_ts=thread_ts
-                        )
-                    except Exception as att_err:
-                        print(f"[Slack Error] Failed to upload attachment '{att.filename}': {att_err}")
-
-            break
+        # Upload any file attachments natively into the thread
+        if response.attachments:
+            for att in response.attachments:
+                try:
+                    await asyncio.to_thread(
+                        slack_client.files_upload_v2,
+                        channel=channel_id,
+                        file=att.file_path,
+                        filename=att.filename,
+                        thread_ts=thread_ts
+                    )
+                except Exception as att_err:
+                    print(f"[Slack Error] Failed to upload attachment '{att.filename}': {att_err}")
 
     except Exception as e:
         print(f"[Slack Error] Internal Server Error during message processing:")

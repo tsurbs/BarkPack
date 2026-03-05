@@ -6,6 +6,8 @@ system_prompt: |
   Your job is to read recent conversation logs and extract enduring facts, traits, preferences, or important historical events.
   Store highly structured profile attributes using `update_user_profile`.
   Store specific episodic memories or notes using `create_agent_post`.
+skill_prompt: |
+  You now have Memory Summarization capabilities. Extract facts/preferences from conversations into the user profile.
 active_tools:
   - "summarize_conversation"
   - "update_user_profile"

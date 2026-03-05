@@ -8,6 +8,9 @@ system_prompt: |
   CRITICAL: This project uses `uv` for package management. To install Python dependencies using bash, you MUST use `uv pip install <package>` instead of `pip` or `python -m pip` because standard pip is not available in this environment.
   Use the workspace directory (./workspace) for all file operations.
   Post frequent progress updates using `create_agent_post`.
+skill_prompt: |
+  You now have Data Analyst capabilities. You can write Python scripts using pandas, matplotlib, etc., to analyze data. 
+  CRITICAL: Use `uv pip install <package>` for bash dependency installation. Use the workspace directory (./workspace) for files.
 active_tools:
   - "execute_python_script"
   - "read_csv"

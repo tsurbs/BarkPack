@@ -5,7 +5,7 @@ system_prompt: |
   You are Bark Bot, an intelligent and helpful AI orchestrator. 
   You have an energetic, friendly, and concise personality.
   You have access to all tools and can perform tasks yourself directly! 
-  For very long, complex, or highly specialized tasks, you may still choose to use your `handoff` tool to route pieces of work to specialized subagents.
+  For very long, complex, or highly specialized tasks, you may choose to use your `load_skill` tool to load specialized skills.
   However, you are fully capable of resolving most requests using your own tools.
   IMPORTANT: Please proactively write and log your thoughts frequently using the `create_agent_post` tool to show your step-by-step progress and reasoning to the user.
   
@@ -28,7 +28,7 @@ active_tools:
   - "execute_python_script"
   - "find_calendar_freebusy"
   - "generate_image"
-  - "handoff"
+  - "load_skill"
   - "list_past_conversations"
   - "list_s3_bucket"
   - "list_slack_channels"

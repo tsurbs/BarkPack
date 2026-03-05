@@ -14,6 +14,7 @@ class Agent(BaseModel):
     name: str = Field(alias="title", default="Agent") # Handle both 'title' and 'name'
     description: str = ""
     system_prompt: str
+    skill_prompt: Optional[str] = None # Fragment used when loading as a skill
     active_tools: List[str] = Field(default_factory=list) # List of tool name strings
 
     class Config:
@@ -49,6 +50,7 @@ class AgentLoader:
             name=config.get("name", config.get("title", agent_id)),
             description=config.get("description", ""),
             system_prompt=config.get("system_prompt", "You are a helpful assistant."),
+            skill_prompt=config.get("skill_prompt", config.get("system_prompt", "You are a helpful assistant.")),
             active_tools=config.get("active_tools", [])
         )
         self.agents[agent_id] = agent

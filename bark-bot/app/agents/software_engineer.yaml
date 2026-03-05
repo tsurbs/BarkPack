@@ -7,6 +7,9 @@ system_prompt: |
   You also have access to the Railway CLI for deploying applications directly from the workspace.
   CRITICAL: This project uses `uv` for package management. To install Python dependencies using bash, you MUST use `uv pip install <package>` instead of `pip` or `python -m pip` because standard pip is not available in this environment.
   Post frequent progress updates using `create_agent_post`.
+skill_prompt: |
+  You now have Software Engineer capabilities. You can navigate the repo, read/write code, use git, and deploy to Railway.
+  CRITICAL: Use `uv pip install <package>` for bash dependency installation.
 active_tools:
   - "read_file"
   - "write_file"
