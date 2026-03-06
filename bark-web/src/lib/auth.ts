@@ -32,21 +32,21 @@ export const auth = betterAuth({
 				},
 			],
 		}),
-		customSession(async ({ user, session }, ctx) => {
+		customSession(async ({ user, session }) => {
 			const customSessionObject: Auth = { session, user };
 
-			// Get the decoded access token from the user for the external provider
 			try {
-				const accessToken = await auth.api.getAccessToken({
-					body: { providerId: "oidc" },
-					headers: ctx.headers,
+				// Fetch the user's accounts to get the OIDC ID Token directly from DB
+				const oidcAccount = await db.query.account.findFirst({
+					where: (account, { eq, and }) =>
+						and(eq(account.userId, user.id), eq(account.providerId, "oidc")),
 				});
 
-				if (accessToken && accessToken.accessToken) {
-					customSessionObject.session.accessToken = accessToken.accessToken;
+				if (oidcAccount && oidcAccount.idToken) {
+					customSessionObject.session.accessToken = oidcAccount.idToken;
 				}
 			} catch (e) {
-				// Not authenticated with OIDC or accessToken failed to fetch
+				// Failed to fetch accounts or ID Token missing
 			}
 
 			return customSessionObject;
