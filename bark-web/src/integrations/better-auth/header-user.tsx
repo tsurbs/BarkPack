@@ -12,7 +12,7 @@ export default function BetterAuthHeader() {
 		return (
 			<button
 				type="button"
-				onClick={() => authClient.signIn.social({ provider: "google" })}
+				onClick={() => authClient.signIn.oauth2({ providerId: "oidc" })}
 				className="flex items-center gap-2 p-2 text-sm font-medium text-black-600 hover:bg-black-50 rounded-lg transition-colors w-full"
 			>
 				<User size={16} />
