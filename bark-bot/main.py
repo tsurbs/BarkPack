@@ -16,15 +16,24 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle for the application."""
-    logger.info("Syncing and loading skills from S3...")
-    await ensure_agents_initialized()
-    logger.info("Keys loaded successfully.")
+    # 1. Sync and load skills from S3
+    try:
+        logger.info("Syncing and loading skills from S3...")
+        await ensure_agents_initialized()
+        logger.info("Skills loaded successfully.")
+    except Exception as e:
+        logger.error(f"CRITICAL: Failed to initialize agents from S3: {e}")
+        # We don't crash here so the healthcheck can still pass, 
+        # but the bot might be degraded.
     
-    # Tool Registry Sync
-    from app.tools.registry import ensure_tools_initialized
-    logger.info("Syncing native tools to database...")
-    await ensure_tools_initialized()
-    logger.info("Tools synced successfully.")
+    # 2. Tool Registry Sync (Postgres)
+    try:
+        from app.tools.registry import ensure_tools_initialized
+        logger.info("Syncing native tools to database...")
+        await ensure_tools_initialized()
+        logger.info("Tools synced successfully.")
+    except Exception as e:
+        logger.error(f"CRITICAL: Failed to sync native tools to database: {e}")
     
     yield
 
