@@ -88,8 +88,8 @@ export const getConversations = createServerFn({ method: "GET" }).handler(
 	},
 );
 
-export const getConversationDetail = createServerFn({ method: "GET" })
-	.handler(async (ctx: any) => {
+export const getConversationDetail = createServerFn({ method: "GET" }).handler(
+	async (ctx: any) => {
 		const conversationId = ctx.data as string;
 		const msgs = await db
 			.select()
@@ -98,7 +98,8 @@ export const getConversationDetail = createServerFn({ method: "GET" })
 			.orderBy(messages.createdAt);
 
 		return { messages: msgs };
-	});
+	},
+);
 
 export const getApiLogs = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -114,7 +115,7 @@ export const getApiLogs = createServerFn({ method: "GET" }).handler(
 				if (log.payload) {
 					parsedPayload = JSON.parse(log.payload);
 				}
-			} catch (_e) { }
+			} catch (_e) {}
 
 			// Extract token usage
 			const tokens = parsedPayload?.usage?.total_tokens

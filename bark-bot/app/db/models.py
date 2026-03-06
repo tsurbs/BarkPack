@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Boolean, JSON
 from pgvector.sqlalchemy import Vector
 from datetime import datetime, timezone
 import uuid
@@ -67,3 +67,52 @@ class DBTool(Base):
     content = Column(Text)
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+# --- BetterAuth Standard Tables ---
+
+class DBUserAuth(Base):
+    """BetterAuth user table. Note: 'user' instead of 'users' to match BetterAuth defaults."""
+    __tablename__ = "user"
+    id = Column(Text, primary_key=True, default=generate_uuid)
+    name = Column(Text, nullable=False)
+    email = Column(Text, nullable=False, unique=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    image = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+class DBSession(Base):
+    __tablename__ = "session"
+    id = Column(Text, primary_key=True, default=generate_uuid)
+    expires_at = Column(DateTime, nullable=False)
+    token = Column(Text, nullable=False, unique=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+    ip_address = Column(Text, nullable=True)
+    user_agent = Column(Text, nullable=True)
+    user_id = Column(Text, ForeignKey("user.id", ondelete="cascade"), nullable=False, index=True)
+
+class DBAccount(Base):
+    __tablename__ = "account"
+    id = Column(Text, primary_key=True, default=generate_uuid)
+    account_id = Column(Text, nullable=False)
+    provider_id = Column(Text, nullable=False)
+    user_id = Column(Text, ForeignKey("user.id", ondelete="cascade"), nullable=False, index=True)
+    access_token = Column(Text, nullable=True)
+    refresh_token = Column(Text, nullable=True)
+    id_token = Column(Text, nullable=True)
+    access_token_expires_at = Column(DateTime, nullable=True)
+    refresh_token_expires_at = Column(DateTime, nullable=True)
+    scope = Column(Text, nullable=True)
+    password = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+class DBVerification(Base):
+    __tablename__ = "verification"
+    id = Column(Text, primary_key=True, default=generate_uuid)
+    identifier = Column(Text, nullable=False, index=True)
+    value = Column(Text, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)

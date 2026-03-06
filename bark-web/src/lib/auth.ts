@@ -23,7 +23,9 @@ export const auth = betterAuth({
 			config: [
 				{
 					providerId: "oidc",
-					discoveryUrl: process.env.OIDC_ISSUER_URL,
+					discoveryUrl: process.env.OIDC_ISSUER_URL
+						? `${process.env.OIDC_ISSUER_URL.replace(/\/$/, "")}/.well-known/openid-configuration`
+						: undefined,
 					clientId: process.env.OIDC_CLIENT_ID || "",
 					clientSecret: process.env.OIDC_CLIENT_SECRET || "",
 					scopes: ["openid", "email", "profile"],

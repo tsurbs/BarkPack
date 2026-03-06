@@ -119,12 +119,12 @@ function LogsPage() {
 										<td className="py-3 px-4 font-mono text-xs text-black-400 whitespace-nowrap">
 											{mounted && log.createdAt
 												? new Date(log.createdAt).toLocaleString(undefined, {
-													month: "short",
-													day: "2-digit",
-													hour: "2-digit",
-													minute: "2-digit",
-													second: "2-digit",
-												})
+														month: "short",
+														day: "2-digit",
+														hour: "2-digit",
+														minute: "2-digit",
+														second: "2-digit",
+													})
 												: ""}
 										</td>
 										<td className="py-3 px-4">

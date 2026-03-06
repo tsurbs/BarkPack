@@ -1,5 +1,5 @@
+import { LogOut, User } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
-import { User, LogOut } from "lucide-react";
 
 export default function BetterAuthHeader() {
 	const { data: session, isPending } = authClient.useSession();

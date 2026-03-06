@@ -80,11 +80,11 @@ function UsersPage() {
 										{mounted
 											? user.lastActive
 												? new Date(user.lastActive).toLocaleString(undefined, {
-													month: "short",
-													day: "numeric",
-													hour: "2-digit",
-													minute: "2-digit",
-												})
+														month: "short",
+														day: "numeric",
+														hour: "2-digit",
+														minute: "2-digit",
+													})
 												: "N/A"
 											: ""}
 									</td>

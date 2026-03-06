@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Save, Plus, Trash2 } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
 
 export const Route = createFileRoute("/dashboard/skills")({

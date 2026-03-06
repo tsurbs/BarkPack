@@ -10,7 +10,8 @@ function App() {
 				<div className="relative z-10">
 					<div className="flex flex-col items-center justify-center gap-4 mb-6">
 						<h1 className="text-5xl md:text-7xl font-bold text-black-900 tracking-tight">
-							Bark<span className="bg-(--brand-gradient) bg-clip-text">Pack</span>
+							Bark
+							<span className="bg-(--brand-gradient) bg-clip-text">Pack</span>
 						</h1>
 						<p className="text-xl md:text-2xl text-black-400 font-medium">
 							AI Agent Management & Observability Platform
