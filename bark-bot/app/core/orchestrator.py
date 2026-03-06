@@ -73,47 +73,14 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
     agent_id = request.agent_id or "bark_bot"
     active_agent = agent_loader.get_agent(agent_id)
     
-    # 2. Master Tool Registry (instantiate everything once)
-    master_tool_registry = {t.name: t for t in [
-        ReadFileTool(), 
-        SearchTool(), 
-        CreateAgentPostTool(), 
-        SearchAgentPostsTool(),
-        ListPastConversationsTool(),
-        ReadConversationTool(),
-        ExecuteBashTool(),
-        ExecutePythonScriptTool(),
-        WriteFileTool(),
-        RailwayDeployTool(),
-        SearchNotionTool(),
-        ReadNotionPageTool(),
-        TavilySearchTool(),
-        FirecrawlTool(),
-        SummarizeConversationTool(),
-        UpdateUserProfileTool(),
-        SearchGithubIssuesTool(),
-        CreateGithubIssueTool(),
-        UpdateGithubProjectStatusTool(),
-        ReadGmailMessagesTool(),
-        SendGmailTool(),
-        DraftGmailTool(),
-        CreateCalendarEventTool(),
-        FindCalendarFreeBusyTool(),
-        SearchDriveFilesTool(),
-        ModifyDrivePermissionsTool(),
-        CreateGoogleDocTool(),
-        ReadGoogleDocTool(),
-        UpdateGoogleSheetTool(),
-        ReadGoogleSheetTool(),
-        SubscribeWorkspaceEventsTool(),
-        ManageCloudIdentityGroupsTool(),
-        UploadToS3Tool(),
-        ListS3BucketTool(),
-        SendSlackMessageTool(),
-        ListSlackChannelsTool(),
-        AttachFileTool(),
-        GenerateImageTool()
-    ]}
+    # 2. Master Tool Registry
+    from app.tools.registry import get_all_available_tools
+    if db:
+        master_tool_registry = await get_all_available_tools(db)
+    else:
+        # Fallback if no DB is provided, avoid crashing by loading static tools
+        from app.tools.registry import NATIVE_TOOLS
+        master_tool_registry = dict(NATIVE_TOOLS)
 
     # Add Load Skill Tool dynamically
     load_skill_tool = LoadSkillTool()

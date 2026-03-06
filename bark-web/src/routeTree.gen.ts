@@ -13,6 +13,8 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
+import { Route as DashboardToolsRouteImport } from './routes/dashboard/tools'
+import { Route as DashboardSkillsRouteImport } from './routes/dashboard/skills'
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
 import { Route as DashboardConversationsRouteImport } from './routes/dashboard/conversations'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -37,6 +39,16 @@ const DashboardUsersRoute = DashboardUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardToolsRoute = DashboardToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSkillsRoute = DashboardSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardLogsRoute = DashboardLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -58,6 +70,8 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/conversations': typeof DashboardConversationsRoute
   '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/skills': typeof DashboardSkillsRoute
+  '/dashboard/tools': typeof DashboardToolsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -66,6 +80,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard/conversations': typeof DashboardConversationsRoute
   '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/skills': typeof DashboardSkillsRoute
+  '/dashboard/tools': typeof DashboardToolsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -76,6 +92,8 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/conversations': typeof DashboardConversationsRoute
   '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/skills': typeof DashboardSkillsRoute
+  '/dashboard/tools': typeof DashboardToolsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -87,6 +105,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/conversations'
     | '/dashboard/logs'
+    | '/dashboard/skills'
+    | '/dashboard/tools'
     | '/dashboard/users'
     | '/dashboard/'
     | '/api/auth/$'
@@ -95,6 +115,8 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard/conversations'
     | '/dashboard/logs'
+    | '/dashboard/skills'
+    | '/dashboard/tools'
     | '/dashboard/users'
     | '/dashboard'
     | '/api/auth/$'
@@ -104,6 +126,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/conversations'
     | '/dashboard/logs'
+    | '/dashboard/skills'
+    | '/dashboard/tools'
     | '/dashboard/users'
     | '/dashboard/'
     | '/api/auth/$'
@@ -145,6 +169,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardUsersRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/tools': {
+      id: '/dashboard/tools'
+      path: '/tools'
+      fullPath: '/dashboard/tools'
+      preLoaderRoute: typeof DashboardToolsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/skills': {
+      id: '/dashboard/skills'
+      path: '/skills'
+      fullPath: '/dashboard/skills'
+      preLoaderRoute: typeof DashboardSkillsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/logs': {
       id: '/dashboard/logs'
       path: '/logs'
@@ -172,6 +210,8 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardConversationsRoute: typeof DashboardConversationsRoute
   DashboardLogsRoute: typeof DashboardLogsRoute
+  DashboardSkillsRoute: typeof DashboardSkillsRoute
+  DashboardToolsRoute: typeof DashboardToolsRoute
   DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -179,6 +219,8 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardConversationsRoute: DashboardConversationsRoute,
   DashboardLogsRoute: DashboardLogsRoute,
+  DashboardSkillsRoute: DashboardSkillsRoute,
+  DashboardToolsRoute: DashboardToolsRoute,
   DashboardUsersRoute: DashboardUsersRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }

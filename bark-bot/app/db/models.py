@@ -57,3 +57,13 @@ class ContextSummary(Base):
     summary = Column(Text)
     messages_summarized = Column(String)  # Integer count of messages compressed
     created_at = Column(DateTime, default=utcnow)
+
+class DBTool(Base):
+    __tablename__ = "tools"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, unique=True, index=True)
+    description = Column(Text)
+    tool_type = Column(String) # 'native', 'python', 'mcp'
+    content = Column(Text)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)

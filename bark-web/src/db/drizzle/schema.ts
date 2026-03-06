@@ -102,3 +102,16 @@ export const contextSummaries = pgTable(
 		}),
 	],
 );
+
+export const tools = pgTable(
+	"tools",
+	{
+		id: varchar().primaryKey().notNull(),
+		name: varchar().unique().notNull(),
+		description: text().notNull(),
+		toolType: varchar("tool_type").notNull(), // 'native', 'python', 'mcp'
+		content: text().notNull(),
+		createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+	}
+);

@@ -20,7 +20,7 @@ function DashboardLayout() {
             <Link
               to="/dashboard"
               activeOptions={{ exact: true }}
-              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-[1px]"
+              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-px"
               activeProps={{
                 className: "text-blue-600 border-blue-600 font-bold",
               }}
@@ -29,7 +29,7 @@ function DashboardLayout() {
             </Link>
             <Link
               to="/dashboard/conversations"
-              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-[1px]"
+              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-px"
               activeProps={{
                 className: "text-blue-600 border-blue-600 font-bold",
               }}
@@ -38,7 +38,7 @@ function DashboardLayout() {
             </Link>
             <Link
               to="/dashboard/logs"
-              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-[1px]"
+              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-px"
               activeProps={{
                 className: "text-blue-600 border-blue-600 font-bold",
               }}
@@ -47,12 +47,30 @@ function DashboardLayout() {
             </Link>
             <Link
               to="/dashboard/users"
-              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-[1px]"
+              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-px"
               activeProps={{
                 className: "text-blue-600 border-blue-600 font-bold",
               }}
             >
               Users
+            </Link>
+            <Link
+              to="/dashboard/skills"
+              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-px"
+              activeProps={{
+                className: "text-blue-600 border-blue-600 font-bold",
+              }}
+            >
+              ✨ Agent Skills
+            </Link>
+            <Link
+              to="/dashboard/tools"
+              className="px-4 py-2 text-black-400 hover:text-black-900 scotty-tab border-b-2 border-transparent relative top-px"
+              activeProps={{
+                className: "text-blue-600 border-blue-600 font-bold",
+              }}
+            >
+              🛠️ Tools
             </Link>
           </nav>
         </header>

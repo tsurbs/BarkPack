@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.surfaces.web import router as web_router
 from app.surfaces.slack import router as slack_router
+from app.api.tools import router as tools_router
+from app.api.agents import router as agents_router
 from app.core.orchestrator import ensure_agents_initialized
 
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +18,14 @@ async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle for the application."""
     logger.info("Syncing and loading skills from S3...")
     await ensure_agents_initialized()
-    logger.info("Skills loaded successfully.")
+    logger.info("Keys loaded successfully.")
+    
+    # Tool Registry Sync
+    from app.tools.registry import ensure_tools_initialized
+    logger.info("Syncing native tools to database...")
+    await ensure_tools_initialized()
+    logger.info("Tools synced successfully.")
+    
     yield
 
 
@@ -39,6 +48,8 @@ app.add_middleware(
 # Include surface routers
 app.include_router(web_router)
 app.include_router(slack_router)
+app.include_router(tools_router)
+app.include_router(agents_router)
 
 @app.get("/health")
 async def health_check():

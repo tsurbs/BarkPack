@@ -6,7 +6,7 @@ from jwt import PyJWKClient
 
 from app.models.user import User
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 OIDC_ISSUER_URL = os.getenv("OIDC_ISSUER_URL")
 OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID")
@@ -18,11 +18,18 @@ if OIDC_ISSUER_URL:
 else:
     jwks_client = None
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)) -> User:
+async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Security(security)) -> User:
     """
     Dependency to extract and validate an OIDC JWT from the Authorization header.
     Returns the canonical internal User.
     """
+    # If no OIDC is configured, allow mock dev user (DANGER IN PROD)
+    if not OIDC_ISSUER_URL or not OIDC_CLIENT_ID:
+        return User(id="dev-user-id", email="dev@example.com", name="Dev User", roles=["admin"])
+
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     token = credentials.credentials
     
     # If no OIDC is configured, allow mock dev user (DANGEROUS IN PROD, used for local dev only)
