@@ -1,7 +1,13 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, type Session, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { customSession, genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { db } from "../db";
+
+interface Auth {
+	session: Session & { accessToken?: string };
+	user: User;
+}
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
@@ -10,5 +16,37 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 	},
-	plugins: [tanstackStartCookies()],
+	plugins: [
+		tanstackStartCookies(),
+		genericOAuth({
+			config: [
+				{
+					providerId: "oidc",
+					discoveryUrl: process.env.OIDC_ISSUER_URL,
+					clientId: process.env.OIDC_CLIENT_ID || "",
+					clientSecret: process.env.OIDC_CLIENT_SECRET || "",
+					scopes: ["openid", "email", "profile"],
+				},
+			],
+		}),
+		customSession(async ({ user, session }, ctx) => {
+			const customSessionObject: Auth = { session, user };
+
+			// Get the decoded access token from the user for the external provider
+			try {
+				const accessToken = await auth.api.getAccessToken({
+					body: { providerId: "oidc" },
+					headers: ctx.headers,
+				});
+
+				if (accessToken && accessToken.accessToken) {
+					customSessionObject.session.accessToken = accessToken.accessToken;
+				}
+			} catch (e) {
+				// Not authenticated with OIDC or accessToken failed to fetch
+			}
+
+			return customSessionObject;
+		}),
+	],
 });
