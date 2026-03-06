@@ -29,6 +29,7 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
         return User(id="dev-user-id", email="dev@example.com", name="Dev User", roles=["admin"])
 
     if not credentials:
+        print("Auth failed: No credentials provided in Authorization header")
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     token = credentials.credentials
@@ -39,6 +40,12 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
         
     try:
         signing_key = jwks_client.get_signing_key_from_jwt(token)
+        print(f"Decoding token with audience {OIDC_CLIENT_ID} and issuer {OIDC_ISSUER_URL}")
+        
+        # Verify without audience first to debug what the token actually contains
+        unverified_payload = jwt.decode(token, options={"verify_signature": False})
+        print(f"Unverified token payload: {unverified_payload}")
+
         payload = jwt.decode(
             token,
             signing_key.key,
@@ -54,7 +61,12 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
             name=payload.get("name", payload.get("preferred_username", "Unknown User")),
             roles=payload.get("roles", [])
         )
-    except jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError as e:
+        print(f"Auth failed: Token expired - {e}")
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.PyJWTError as e:
+        print(f"Auth failed: PyJWTError - {e}")
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+    except Exception as e:
+        print(f"Auth failed: Unexpected error - {e}")
+        raise HTTPException(status_code=401, detail=f"Unexpected auth error: {str(e)}")
