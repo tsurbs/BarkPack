@@ -16,7 +16,8 @@ class SandboxListRunningTool(BaseTool):
 
     async def run(self, args: SandboxListRunningArgs, user: User, db: Optional[AsyncSession] = None) -> str:
         client = get_client()
-        sandboxes = await client.list()
+        sandboxes_resp = await client.list()
+        sandboxes = sandboxes_resp.items
         
         if not sandboxes:
             return "No active sandboxes found."

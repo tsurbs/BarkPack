@@ -101,7 +101,8 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
         available_tools = []
         for tool_name in active_agent.active_tools:
             if tool_name in master_tool_registry:
-                available_tools.append(master_tool_registry[tool_name])
+                if tool_name not in active_agent.excluded_tools:
+                    available_tools.append(master_tool_registry[tool_name])
         # Always grant the load_skill tool so capabilities can be expanded dynamically
         available_tools.append(load_skill_tool)
 
@@ -218,6 +219,11 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
                     added_tools = []
                     for tool_name in skill.active_tools:
                         if tool_name in master_tool_registry and tool_name not in tool_map:
+                            # Filter by the ACTIVE AGENT'S exclusion list, not the skill's
+                            if active_agent and tool_name in active_agent.excluded_tools:
+                                logger.warning(f"Tool '{tool_name}' from skill '{target_skill}' blocked by exclusion policy of agent '{active_agent.id}'")
+                                continue
+                            
                             t = master_tool_registry[tool_name]
                             tool_map[tool_name] = t
                             available_tools.append(t)

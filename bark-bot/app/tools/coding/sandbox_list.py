@@ -7,7 +7,7 @@ from .sandbox import require_sandbox
 
 class SandboxListArgs(BaseModel):
     task_id: str
-    path: str = Field(default="/workspace/repo")
+    path: str = Field(default="workspace/repo")
 
 class SandboxListTool(BaseTool):
     name = "sandbox_list"

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Boolean, JSON
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Boolean, JSON, Integer
 from pgvector.sqlalchemy import Vector
 from datetime import datetime, timezone
 import uuid
@@ -116,3 +116,26 @@ class DBVerification(Base):
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=utcnow, nullable=False)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+class CodingTask(Base):
+    __tablename__ = "coding_tasks"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    task_id = Column(String, unique=True, index=True) # Public/Agent-facing ID (e.g. task-abc)
+    status = Column(String, default="pending") # pending, running, complete, failed, abandoned
+    source = Column(String) # Slack, CLI, GitHub
+    task_description = Column(Text)
+    work_product = Column(Text) # Resulting PR URL or branch
+    repo_url = Column(String)
+    branch = Column(String)
+    sandbox_id = Column(String)
+    sandbox_status = Column(String) # created, running, stopped, deleted
+    media_artifacts = Column(JSON, default=list) # List of S3 URLs (screenshots/videos)
+    test_results = Column(JSON, default=dict) # Structured test output
+    token_cost = Column(Integer, default=0)
+    # Semantic search over tasks
+    task_embedding = Column(Vector(1536))
+    diff_text = Column(Text) # Captured git diff
+    files_changed = Column(JSON, default=list)
+    commit_sha = Column(String)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)

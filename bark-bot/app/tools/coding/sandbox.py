@@ -29,7 +29,8 @@ async def require_sandbox(task_id: str) -> Any:
         client = _get_client()
         try:
             # We use task_id as the name or label to find it
-            sandboxes = await client.list()
+            sandboxes_resp = await client.list()
+            sandboxes = sandboxes_resp.items
             for s in sandboxes:
                 if s.name == task_id or s.labels.get("task_id") == task_id:
                     _sandboxes[task_id] = s

@@ -21,7 +21,7 @@ from app.tools.file_tools import WriteFileTool
 from app.tools.railway_tools import RailwayDeployTool
 from app.tools.knowledge_tools import SearchNotionTool, ReadNotionPageTool, TavilySearchTool, FirecrawlTool
 from app.tools.summarization_tools import SummarizeConversationTool, UpdateUserProfileTool
-from app.tools.github_tools import SearchGithubIssuesTool, CreateGithubIssueTool, UpdateGithubProjectStatusTool
+from app.tools.github_tools import SearchGithubIssuesTool, CreateGithubIssueTool, UpdateGithubProjectStatusTool, CreatePullRequestTool
 from app.tools.google_workspace_tools import (
     ReadGmailMessagesTool, SendGmailTool, DraftGmailTool, CreateCalendarEventTool, FindCalendarFreeBusyTool,
     SearchDriveFilesTool, ModifyDrivePermissionsTool, CreateGoogleDocTool, ReadGoogleDocTool,
@@ -31,6 +31,23 @@ from app.tools.s3_tools import UploadToS3Tool, ListS3BucketTool
 from app.tools.image_tools import GenerateImageTool
 from app.tools.slack_tools import SendSlackMessageTool, ListSlackChannelsTool
 from app.tools.attachment_tools import AttachFileTool
+from app.tools.coding.sandbox_bash import SandboxBashTool
+from app.tools.coding.sandbox_read import SandboxReadTool
+from app.tools.coding.sandbox_write import SandboxWriteTool
+from app.tools.coding.sandbox_edit import SandboxEditTool
+from app.tools.coding.sandbox_glob import SandboxGlobTool
+from app.tools.coding.sandbox_grep import SandboxGrepTool
+from app.tools.coding.sandbox_list import SandboxListTool
+from app.tools.coding.sandbox_git_status import SandboxGitStatusTool
+from app.tools.coding.sandbox_git_commit import SandboxGitCommitTool
+from app.tools.coding.sandbox_git_push import SandboxGitPushTool
+from app.tools.coding.sandbox_test import SandboxTestTool
+from app.tools.coding.sandbox_diff import SandboxDiffTool
+from app.tools.coding.sandbox_create import SandboxCreateTool
+from app.tools.coding.sandbox_release import SandboxReleaseTool
+from app.tools.coding.sandbox_resume import SandboxResumeTool
+from app.tools.coding.sandbox_start import SandboxStartTool
+from app.tools.coding.sandbox_list_running import SandboxListRunningTool
 
 # Map of statically known native tools
 NATIVE_TOOLS = {
@@ -40,13 +57,17 @@ NATIVE_TOOLS = {
         ExecutePythonScriptTool(), WriteFileTool(), RailwayDeployTool(),
         SearchNotionTool(), ReadNotionPageTool(), TavilySearchTool(),
         FirecrawlTool(), SummarizeConversationTool(), UpdateUserProfileTool(),
-        SearchGithubIssuesTool(), CreateGithubIssueTool(), UpdateGithubProjectStatusTool(),
+        SearchGithubIssuesTool(), CreateGithubIssueTool(), UpdateGithubProjectStatusTool(), CreatePullRequestTool(),
         ReadGmailMessagesTool(), SendGmailTool(), DraftGmailTool(), CreateCalendarEventTool(),
         FindCalendarFreeBusyTool(), SearchDriveFilesTool(), ModifyDrivePermissionsTool(),
         CreateGoogleDocTool(), ReadGoogleDocTool(), UpdateGoogleSheetTool(),
         ReadGoogleSheetTool(), SubscribeWorkspaceEventsTool(), ManageCloudIdentityGroupsTool(),
         UploadToS3Tool(), ListS3BucketTool(), SendSlackMessageTool(),
-        ListSlackChannelsTool(), AttachFileTool(), GenerateImageTool()
+        ListSlackChannelsTool(), AttachFileTool(), GenerateImageTool(),
+        SandboxBashTool(), SandboxReadTool(), SandboxWriteTool(), SandboxEditTool(),
+        SandboxGlobTool(), SandboxGrepTool(), SandboxListTool(), SandboxGitStatusTool(),
+        SandboxGitCommitTool(), SandboxGitPushTool(), SandboxTestTool(), SandboxDiffTool(),
+        SandboxCreateTool(), SandboxReleaseTool(), SandboxResumeTool(), SandboxStartTool(), SandboxListRunningTool()
     ]
 }
 

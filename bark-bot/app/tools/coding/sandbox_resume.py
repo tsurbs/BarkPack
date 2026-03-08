@@ -20,7 +20,8 @@ class SandboxResumeTool(BaseTool):
 
     async def run(self, args: SandboxResumeArgs, user: User, db: Optional[AsyncSession] = None) -> str:
         client = get_client()
-        sandboxes = await client.list()
+        sandboxes_resp = await client.list()
+        sandboxes = sandboxes_resp.items
         
         target_sb = None
         for sb in sandboxes:

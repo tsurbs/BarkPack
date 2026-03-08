@@ -15,7 +15,7 @@ SENSITIVE_PATTERNS = [
 class SandboxBashArgs(BaseModel):
     task_id: str
     command: str
-    workdir: str = Field(default="/workspace/repo")
+    workdir: str = Field(default="workspace/repo")
 
 class SandboxBashTool(BaseTool):
     name = "sandbox_bash"

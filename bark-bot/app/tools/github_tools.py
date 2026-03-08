@@ -85,3 +85,36 @@ class UpdateGithubProjectStatusTool(BaseTool):
     async def run(self, args: GithubUpdateStatusArgs, user: User, db: Optional[AsyncSession] = None) -> str:
         # Note: Projects V2 requires complex GraphQL mutations which PyGithub doesn't natively support out-of-the-box in a simple way
         return f"Warning: GitHub Projects V2 updates require specialized GraphQL mutations. (Mock output for issue {args.issue_id} -> '{args.status}')"
+
+class GithubCreatePRArgs(BaseModel):
+    repository: str = Field(description="The repository name in 'owner/repo' format.")
+    title: str = Field(description="The title of the pull request.")
+    body: str = Field(description="The markdown body describing the changes.")
+    head: str = Field(description="The name of the branch where your changes are implemented.")
+    base: str = Field(description="The name of the branch you want to merge into (e.g. 'main').", default="main")
+
+class CreatePullRequestTool(BaseTool):
+    name = "create_github_pull_request"
+    description = "Create a new pull request in a GitHub repository."
+    args_schema = GithubCreatePRArgs
+    
+    async def run(self, args: GithubCreatePRArgs, user: User, db: Optional[AsyncSession] = None) -> str:
+        token = os.getenv("GITHUB_TOKEN")
+        if not token or token == "your_github_pat_here":
+            return "Error: GITHUB_TOKEN is not set. Please add it to your .env file."
+            
+        try:
+            auth = Auth.Token(token)
+            g = Github(auth=auth)
+            repo = g.get_repo(args.repository)
+            
+            pr = repo.create_pull(
+                title=args.title,
+                body=args.body,
+                head=args.head,
+                base=args.base
+            )
+            g.close()
+            return f"Successfully created GitHub PR #{pr.number}: '{pr.title}'\nURL: {pr.html_url}"
+        except Exception as e:
+            return f"Error creating GitHub PR in {args.repository}: {str(e)}"

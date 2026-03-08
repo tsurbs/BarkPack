@@ -91,5 +91,5 @@ class SandboxCreateTool(BaseTool):
         return (
             f"Sandbox {sandbox_name!r} ready. task_id={args.task_id}\n"
             f"Repo cloned: {args.repo_url} @ {args.branch}\n"
-            f"Workspace: /workspace/repo"
+            f"Workspace: workspace/repo"
         )

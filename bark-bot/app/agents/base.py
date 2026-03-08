@@ -21,6 +21,7 @@ class Agent(BaseModel):
     system_prompt: str
     skill_prompt: Optional[str] = None
     active_tools: List[str] = Field(default_factory=list)
+    excluded_tools: List[str] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True
@@ -43,13 +44,25 @@ class AgentLoader:
         Full async startup sequence:
         1. Sync local agent YAMLs to S3 (upload if newer or missing)
         2. Load all agents from S3
+        3. Load all agents from local (ensures local overrides if S3 is stale)
         """
         if self._initialized:
             return
-        await self._sync_local_to_s3()
+        
+        # Try to sync but don't block on failure
+        try:
+            await self._sync_local_to_s3()
+        except Exception as e:
+            logger.warning(f"Initial sync to S3 failed: {e}")
+
+        # Load from S3 source if available
         await self._load_all_from_s3()
+        
+        # Always load local last to ensure the developer's local edits are the final truth
+        self._load_all_local()
+        
         self._initialized = True
-        logger.info(f"AgentLoader initialized with {len(self.agents)} agents from S3")
+        logger.info(f"AgentLoader initialized with {len(self.agents)} agents.")
 
     # ------------------------------------------------------------------
     # Sync: local → S3
@@ -163,7 +176,8 @@ class AgentLoader:
             description=config.get("description", ""),
             system_prompt=config.get("system_prompt", "You are a helpful assistant."),
             skill_prompt=config.get("skill_prompt", config.get("system_prompt", "You are a helpful assistant.")),
-            active_tools=config.get("active_tools", [])
+            active_tools=config.get("active_tools", []),
+            excluded_tools=config.get("excluded_tools", [])
         )
         self.agents[agent_id] = agent
         logger.debug(f"Registered agent '{agent_id}' v{agent.version} from {source}")
