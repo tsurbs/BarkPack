@@ -71,5 +71,11 @@
     "vite": "^7.1.7",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.5"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.0.0",
+    "@rollup/rollup-darwin-arm64": "^4.0.0",
+    "lightningcss-linux-x64-gnu": "^1.29.1",
+    "lightningcss-darwin-arm64": "^1.29.1"
   }
 }

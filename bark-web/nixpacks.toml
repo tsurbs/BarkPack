@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["nodejs_22"]
+nixPkgs = ["nodejs_22", "bun"]
 
 [phases.build]
-cmds = ["npm install", "npm run build"]
+cmds = ["bun install", "bun run build"]
 
 [start]
-cmd = "npm run start"
+cmd = "bun run start"
