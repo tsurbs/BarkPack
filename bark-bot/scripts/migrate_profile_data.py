@@ -6,10 +6,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
-from app.db.session import DATABASE_URL
+from app.db.session import engine, DATABASE_URL
 
 async def migrate():
-    engine = create_async_engine(DATABASE_URL, echo=False)
     async with engine.begin() as conn:
         print("Altering users table to add profile_data JSON column...")
         try:

@@ -8,6 +8,7 @@ from app.surfaces.slack import router as slack_router
 from app.api.tools import router as tools_router
 from app.api.agents import router as agents_router
 from app.core.orchestrator import ensure_agents_initialized
+from app.db.session import engine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,6 +37,11 @@ async def lifespan(app: FastAPI):
         logger.error(f"CRITICAL: Failed to sync native tools to database: {e}")
     
     yield
+    
+    # Shutdown: Close database connections
+    logger.info("Closing database connections...")
+    await engine.dispose()
+    logger.info("Shutdown complete.")
 
 
 app = FastAPI(
