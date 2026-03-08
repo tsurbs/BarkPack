@@ -151,7 +151,7 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
     llm_messages = await compress_context(llm_messages, CONTEXT_TOKEN_LIMIT, CONTEXT_COMPRESSION_MODEL, db, conversation_id)
 
     # 3. Tool Execution Loop
-    MAX_ITERATIONS = 5
+    MAX_ITERATIONS = 100
     collected_attachments = []  # Accumulate file attachments across iterations
     for _ in range(MAX_ITERATIONS):
         # Re-compress before each LLM call in case tool results grew the context
@@ -255,11 +255,14 @@ async def handle_chat_request(request: ChatRequest, db: AsyncSession = None, con
 
     # If the loop ended without a final text response, force the LLM to produce one
     final_content = response_dict.get("content", "")
-    if not final_content:
+    if not final_content or "tool_calls" in response_dict:
+        # If the last response had tool calls, we aren't "done" with a final summary yet
         llm_messages.append({
-            "role": "user",
-            "content": "[System] The tool execution loop has ended. Please provide a concise final response to the user summarizing what you did and the results."
+            "role": "system",
+            "content": "The tool execution loop has reached its limit or concluded with tool calls. Please provide a concise final response to the user summarizing what you have accomplished so far and any results you've obtained."
         })
+        # Re-compress one last time to ensure the summary call fits
+        llm_messages = await compress_context(llm_messages, CONTEXT_TOKEN_LIMIT, CONTEXT_COMPRESSION_MODEL, db, conversation_id)
         followup = await generate_response(llm_messages, tools=None, db=db, conversation_id=conversation_id)
         final_content = followup.get("content", "")
 

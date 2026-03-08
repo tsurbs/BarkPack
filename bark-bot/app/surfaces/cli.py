@@ -1,6 +1,7 @@
 import asyncio
 import uuid
-from app.core.orchestrator import handle_chat_request
+from app.core.orchestrator import handle_chat_request, ensure_agents_initialized
+from app.tools.registry import ensure_tools_initialized
 from app.models.schemas import ChatRequest, Message
 from app.db.session import AsyncSessionLocal
 
@@ -8,6 +9,11 @@ async def start_cli():
     print("Welcome to Bark Bot CLI! Type 'exit' to quit.")
     print("This is the simple CLI surface for local testing.")
     print("-" * 50)
+    
+    print("Initializing agents and tools...")
+    await ensure_agents_initialized()
+    await ensure_tools_initialized()
+    print("Initialization complete.")
     
     chat_history = []
     
