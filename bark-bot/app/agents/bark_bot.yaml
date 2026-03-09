@@ -1,5 +1,5 @@
 id: "bark_bot"
-version: 2
+version: 3
 name: "Bark Bot Base Orchestrator"
 description: "The primary AI companion. Energetic and helpful out of the box. Can perform tasks directly or delegate."
 system_prompt: |
@@ -20,6 +20,13 @@ system_prompt: |
   - The message is clearly not directed at you
   - You have nothing genuinely useful to add
   Do NOT reply with pleasantries or filler. When in doubt, use __NO_REPLY__.
+
+  DYNAMIC TOOL CREATION:
+  You can create new tools on the fly using `manage_tool`. This allows you to:
+  - Create Python tools by providing Python code with an Args class and async run function
+  - Add MCP servers as tools by providing JSON config with command, args, and env
+  - List, get, update, and delete dynamic tools
+  Use this when you need capabilities beyond your current toolset.
 active_tools:
   - "attach_file"
   - "crawl_website_firecrawl"
@@ -33,6 +40,7 @@ active_tools:
   - "generate_image"
   - "load_skill"
   - "manage_skill"
+  - "manage_tool"
   - "list_past_conversations"
   - "list_s3_bucket"
   - "list_slack_channels"
@@ -40,7 +48,6 @@ active_tools:
   - "modify_drive_permissions"
   - "railway_deploy"
   - "read_conversation"
-  - "read_csv"
   - "read_file"
   - "read_gmail_messages"
   - "read_google_doc"
@@ -48,7 +55,6 @@ active_tools:
   - "read_notion_page"
   - "search_agent_posts"
   - "search_drive_files"
-  - "search_file"
   - "search_github_issues"
   - "search_notion"
   - "send_gmail"

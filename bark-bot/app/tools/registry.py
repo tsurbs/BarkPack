@@ -48,6 +48,7 @@ from app.tools.coding.sandbox_release import SandboxReleaseTool
 from app.tools.coding.sandbox_resume import SandboxResumeTool
 from app.tools.coding.sandbox_start import SandboxStartTool
 from app.tools.coding.sandbox_list_running import SandboxListRunningTool
+from app.tools.tool_management import ManageToolTool
 
 # Map of statically known native tools
 NATIVE_TOOLS = {
@@ -67,7 +68,7 @@ NATIVE_TOOLS = {
         SandboxBashTool(), SandboxReadTool(), SandboxWriteTool(), SandboxEditTool(),
         SandboxGlobTool(), SandboxGrepTool(), SandboxListTool(), SandboxGitStatusTool(),
         SandboxGitCommitTool(), SandboxGitPushTool(), SandboxTestTool(), SandboxDiffTool(),
-        SandboxCreateTool(), SandboxReleaseTool(), SandboxResumeTool(), SandboxStartTool(), SandboxListRunningTool()
+        SandboxCreateTool(), SandboxReleaseTool(), SandboxResumeTool(), SandboxStartTool(), SandboxListRunningTool(), ManageToolTool()
     ]
 }
 
