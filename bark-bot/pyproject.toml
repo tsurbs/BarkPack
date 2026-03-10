@@ -33,6 +33,7 @@ dependencies = [
     "uvicorn[standard]>=0.41.0",
     "mcp>=1.26.0",
     "daytona-sdk>=0.149.0",
+    "weasyprint>=62.0",
 ]
 
 [dependency-groups]
