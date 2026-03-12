@@ -139,3 +139,26 @@ class CodingTask(Base):
     commit_sha = Column(String)
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+class DBRole(Base):
+    __tablename__ = "roles"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, unique=True, index=True)
+    description = Column(Text)
+    created_at = Column(DateTime, default=utcnow)
+    
+class DBUserRole(Base):
+    __tablename__ = "user_roles"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("user.id", ondelete="cascade"), index=True)
+    role_id = Column(String, ForeignKey("roles.id", ondelete="cascade"), index=True)
+    created_at = Column(DateTime, default=utcnow)
+
+class DBSurfaceCredential(Base):
+    __tablename__ = "surface_credentials"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("user.id", ondelete="cascade"), index=True)
+    surface = Column(String, index=True) # e.g. 'slack', 'github', 'linear'
+    token = Column(Text) # The actual encrypted credential/token
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)

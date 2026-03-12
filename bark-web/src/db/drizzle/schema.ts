@@ -205,3 +205,77 @@ export const accountRelations = relations(account, ({ one }) => ({
 		references: [user.id],
 	}),
 }));
+
+export const roles = pgTable("roles", {
+	id: varchar().primaryKey().notNull(),
+	name: varchar().unique().notNull(),
+	description: text(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const userRoles = pgTable(
+	"user_roles",
+	{
+		id: varchar().primaryKey().notNull(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		roleId: varchar("role_id")
+			.notNull()
+			.references(() => roles.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { mode: "string" })
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => [
+		index("user_roles_userId_idx").on(table.userId),
+		index("user_roles_roleId_idx").on(table.roleId),
+	],
+);
+
+export const surfaceCredentials = pgTable(
+	"surface_credentials",
+	{
+		id: varchar().primaryKey().notNull(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		surface: varchar().notNull(),
+		token: text().notNull(),
+		createdAt: timestamp("created_at", { mode: "string" })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { mode: "string" })
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => [
+		index("surface_credentials_userId_idx").on(table.userId),
+		index("surface_credentials_surface_idx").on(table.surface),
+	],
+);
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+	users: many(userRoles),
+}));
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+	user: one(user, {
+		fields: [userRoles.userId],
+		references: [user.id],
+	}),
+	role: one(roles, {
+		fields: [userRoles.roleId],
+		references: [roles.id],
+	}),
+}));
+
+export const surfaceCredentialsRelations = relations(
+	surfaceCredentials,
+	({ one }) => ({
+		user: one(user, {
+			fields: [surfaceCredentials.userId],
+			references: [user.id],
+		}),
+	}),
+);

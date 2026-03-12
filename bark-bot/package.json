@@ -1,0 +1,11 @@
+{
+  "name": "bark-bot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "uv run python main.py",
+    "lint": "uv run ruff check .",
+    "format": "uv run ruff format .",
+    "test": "uv run pytest"
+  }
+}

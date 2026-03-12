@@ -1,8 +1,9 @@
 import os
 from typing import Optional
-from fastapi import Request, HTTPException, Security
+from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
+from sqlalchemy.orm import Session
 from jwt import PyJWKClient
 
 from app.models.user import User
@@ -55,12 +56,22 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
         )
         
         # Build our internal user from the OIDC payload
-        return User(
+        user = User(
             id=payload.get("sub"),
             email=payload.get("email"),
             name=payload.get("name", payload.get("preferred_username", "Unknown User")),
             roles=payload.get("roles", [])
         )
+
+        # Auto-assign admin role from env var
+        admin_emails_raw = os.getenv("ADMIN_EMAILS", "")
+        if admin_emails_raw:
+            admin_emails = [e.strip().lower() for e in admin_emails_raw.split(",") if e.strip()]
+            if user.email and user.email.lower() in admin_emails:
+                if "admin" not in user.roles:
+                    user.roles.append("admin")
+        
+        return user
     except jwt.ExpiredSignatureError as e:
         print(f"Auth failed: Token expired - {e}")
         raise HTTPException(status_code=401, detail="Token expired")
@@ -70,3 +81,52 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
     except Exception as e:
         print(f"Auth failed: Unexpected error - {e}")
         raise HTTPException(status_code=401, detail=f"Unexpected auth error: {str(e)}")
+
+def get_db_session():
+    from app.db.session import SessionLocal
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+async def get_current_user_with_db_roles(
+    token_user: User = Depends(get_current_user),
+    db: "Session" = Depends(get_db_session)
+) -> User:
+    """
+    Enriches the standard User with roles from the database.
+    """
+    from app.db.models import DBUserRole, DBRole
+
+    # Get roles from DB
+    user_roles = db.query(DBRole.name).join(
+        DBUserRole, DBRole.id == DBUserRole.role_id
+    ).filter(
+        DBUserRole.user_id == token_user.id
+    ).all()
+    
+    # Extract role names
+    db_role_names = [role[0] for role in user_roles]
+    
+    # Merge with existing roles (e.g. from OIDC token)
+    all_roles = list(set(token_user.roles + db_role_names))
+    token_user.roles = all_roles
+    
+    return token_user
+
+def require_role(required_role: str):
+    """
+    Dependency to enforce a specific role requirement.
+    """
+    from fastapi import Depends, HTTPException
+    
+    async def role_checker(user: User = Depends(get_current_user_with_db_roles)):
+        if required_role not in user.roles:
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Operation requires role: {required_role}"
+            )
+        return user
+        
+    return role_checker

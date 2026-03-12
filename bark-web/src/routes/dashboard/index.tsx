@@ -1,295 +1,229 @@
-import { createFileRoute, Link, useLoaderData } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState, useEffect, useCallback } from "react";
 import {
-	Activity,
-	ArchiveRestore,
-	ListTree,
-	MessageSquare,
-	Users,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import {
-	getActivityTimeline,
-	getCompressionEvents,
-	getConversations,
-	getOverviewStats,
-} from "./-api";
+	getUserCredentials,
+	addSurfaceCredential,
+	removeSurfaceCredential,
+} from "../../data/credentials";
+import { getAllUsersWithRoles, assignRole, revokeRole } from "../../data/roles";
 
 export const Route = createFileRoute("/dashboard/")({
-	component: DashboardOverview,
-	loader: async () => {
-		const [stats, timeline, recentConversations, compressions] =
-			await Promise.all([
-				getOverviewStats(),
-				getActivityTimeline(),
-				getConversations(),
-				getCompressionEvents(),
-			]);
-
-		return {
-			stats,
-			timeline,
-			recentConversations: recentConversations.slice(0, 10),
-			compressions,
-		};
-	},
+	component: Dashboard,
 });
 
-function DashboardOverview() {
-	const { stats, timeline, recentConversations, compressions } = useLoaderData({
-		from: "/dashboard/",
-	});
+function Dashboard() {
+	const [credentials, setCredentials] = useState<
+		Array<{ id: string; surface: string; createdAt: string }>
+	>([]);
+	const [users, setUsers] = useState<Array<any>>([]);
+	const [error, setError] = useState<string | null>(null);
 
-	const [mounted, setMounted] = useState(false);
+	// Form states
+	const [newSurface, setNewSurface] = useState("");
+	const [newToken, setNewToken] = useState("");
+
+	// Server Fns
+	const getCreds = useServerFn(getUserCredentials);
+	const addCred = useServerFn(addSurfaceCredential);
+	const rmCred = useServerFn(removeSurfaceCredential);
+
+	const getUsers = useServerFn(getAllUsersWithRoles);
+	const addRole = useServerFn(assignRole);
+	const rmRole = useServerFn(revokeRole);
+
+	const loadData = useCallback(async () => {
+		try {
+			setError(null);
+			const credData = await getCreds();
+			setCredentials(credData);
+
+			// Attempt to load users (will fail if not admin)
+			try {
+				const userData = await getUsers();
+				setUsers(userData);
+			} catch (e) {
+				// Not an admin, ignore
+				console.log("Not an admin or error loading users:", e);
+			}
+		} catch (err: any) {
+			setError(err.message || "Failed to load dashboard data");
+		}
+	}, [getCreds, getUsers]);
+
 	useEffect(() => {
-		setMounted(true);
-	}, []);
+		loadData();
+	}, [loadData]);
 
-	const maxTimelineVal = Math.max(
-		...timeline.map((t) => Math.max(t.messages, t.apiCalls)),
-		1,
-	);
+	const handleAddCredential = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!newSurface || !newToken) return;
+		try {
+			await addCred({ data: { surface: newSurface, token: newToken } });
+			setNewSurface("");
+			setNewToken("");
+			await loadData();
+		} catch (err: any) {
+			setError(err.message || "Failed to add credential");
+		}
+	};
+
+	const handleDeleteCredential = async (surface: string) => {
+		try {
+			await rmCred({ data: { surface } });
+			await loadData();
+		} catch (err: any) {
+			setError(err.message || "Failed to delete credential");
+		}
+	};
+
+	const handleAssignRole = async (userId: string, roleName: string) => {
+		if (!roleName) return;
+		try {
+			await addRole({ data: { userId, roleName } });
+			await loadData();
+		} catch (err: any) {
+			setError(err.message || "Failed to assign role");
+		}
+	};
+
+	const handleRevokeRole = async (userId: string, roleName: string) => {
+		try {
+			await rmRole({ data: { userId, roleName } });
+			await loadData();
+		} catch (err: any) {
+			setError(err.message || "Failed to revoke role");
+		}
+	};
 
 	return (
-		<div className="space-y-8 animate-in fade-in duration-500">
-			{/* KPI Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-				<div className="scotty-card p-6 flex items-center justify-between group">
-					<div>
-						<p className="text-black-400 text-sm font-medium mb-1 group-hover:text-blue-600 transition-colors">
-							Total Users
-						</p>
-						<h3 className="text-3xl font-bold">
-							{stats.totalUsers.toLocaleString()}
-						</h3>
-					</div>
-					<div className="p-3 bg-black-50 rounded-[var(--radius-base)]">
-						<Users size={24} className="text-[var(--color-blue-600)]" />
-					</div>
-				</div>
+		<div className="p-6 max-w-4xl mx-auto space-y-8">
+			<h1 className="text-3xl font-bold">Dashboard</h1>
 
-				<div className="scotty-card p-6 flex items-center justify-between group">
-					<div>
-						<p className="text-black-400 text-sm font-medium mb-1 group-hover:text-blue-600 transition-colors">
-							Conversations
-						</p>
-						<h3 className="text-3xl font-bold">
-							{stats.totalConversations.toLocaleString()}
-						</h3>
-					</div>
-					<div className="p-3 bg-black-50 rounded-[var(--radius-base)]">
-						<ListTree size={24} className="text-[var(--color-blue-600)]" />
-					</div>
-				</div>
+			{error && (
+				<div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div>
+			)}
 
-				<div className="scotty-card p-6 flex items-center justify-between group">
-					<div>
-						<p className="text-black-400 text-sm font-medium mb-1 group-hover:text-blue-600 transition-colors">
-							Messages
-						</p>
-						<h3 className="text-3xl font-bold">
-							{stats.totalMessages.toLocaleString()}
-						</h3>
-					</div>
-					<div className="p-3 bg-black-50 rounded-[var(--radius-base)]">
-						<MessageSquare size={24} className="text-[var(--color-blue-600)]" />
-					</div>
-				</div>
+			{/* Surface Credentials Section */}
+			<section className="bg-white p-6 rounded-lg shadow border border-gray-200">
+				<h2 className="text-2xl font-semibold mb-4">My Surface Credentials</h2>
 
-				<div className="scotty-card p-6 flex items-center justify-between group">
-					<div>
-						<p className="text-black-400 text-sm font-medium mb-1 group-hover:text-blue-600 transition-colors">
-							API Logs
-						</p>
-						<h3 className="text-3xl font-bold">
-							{stats.totalApiCalls.toLocaleString()}
-						</h3>
-					</div>
-					<div className="p-3 bg-black-50 rounded-[var(--radius-base)]">
-						<Activity size={24} className="text-[var(--color-blue-600)]" />
-					</div>
-				</div>
-			</div>
+				<form onSubmit={handleAddCredential} className="flex gap-4 mb-6">
+					<input
+						type="text"
+						placeholder="Surface (e.g. slack)"
+						className="border p-2 rounded flex-1"
+						value={newSurface}
+						onChange={(e) => setNewSurface(e.target.value)}
+					/>
+					<input
+						type="password"
+						placeholder="Token"
+						className="border p-2 rounded flex-1"
+						value={newToken}
+						onChange={(e) => setNewToken(e.target.value)}
+					/>
+					<button
+						type="submit"
+						className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+					>
+						Add
+					</button>
+				</form>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-				{/* Activity Timeline Chart (Pure CSS) */}
-				<div className="lg:col-span-2 scotty-card p-6">
-					<h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-						Activity Timeline (7 Days)
-					</h2>
-					<div className="h-64 flex items-end justify-between items-stretch gap-2 pt-6">
-						{timeline.map((day) => {
-							const msgHeight = Math.max(
-								(day.messages / maxTimelineVal) * 100,
-								2,
-							);
-							const apiHeight = Math.max(
-								(day.apiCalls / maxTimelineVal) * 100,
-								2,
-							);
-
-							// Format date nicely (e.g. 'Nov 12')
-							const dateObj = new Date(`${day.date}T00:00:00`);
-							const formattedDate = mounted
-								? dateObj.toLocaleDateString("en-US", {
-										month: "short",
-										day: "numeric",
-									})
-								: "";
-
-							return (
-								<div
-									key={day.date}
-									className="flex-1 flex flex-col justify-end items-center group relative cursor-pointer"
-								>
-									{/* Tooltip */}
-									<div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-black-100 px-3 py-2 rounded-md text-xs whitespace-nowrap z-10 shadow-xl pointer-events-none text-black-900">
-										<p className="font-bold mb-1">{formattedDate}</p>
-										<p>
-											<span className="inline-block w-2 h-2 rounded-full bg-blue-600 mr-1"></span>{" "}
-											{day.messages} Messages
-										</p>
-										<p>
-											<span className="inline-block w-2 h-2 rounded-full bg-red-600 mr-1"></span>{" "}
-											{day.apiCalls} API Calls
-										</p>
-									</div>
-
-									<div className="w-full max-w-[40px] flex gap-1 items-end justify-center h-[200px] border-b border-black-100">
-										<div
-											className="w-1/2 bg-blue-600 rounded-t-sm transition-all duration-500 ease-out group-hover:brightness-125"
-											style={{ height: `${msgHeight}%` }}
-										></div>
-										<div
-											className="w-1/2 bg-red-600 rounded-t-sm transition-all duration-500 ease-out group-hover:brightness-125 opacity-80"
-											style={{
-												height: `${apiHeight}%`,
-											}}
-										></div>
-									</div>
-									<span className="text-xs text-black-400 mt-2 group-hover:text-black-900 transition-colors">
-										{formattedDate}
-									</span>
-								</div>
-							);
-						})}
-					</div>
-				</div>
-
-				{/* Mini Compression Stats */}
-				<div className="scotty-card p-6 flex flex-col">
-					<h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-						<ArchiveRestore size={20} className="text-purple-400" />
-						Context Compressions
-					</h2>
-
-					<div className="flex-1 flex flex-col justify-center items-center text-center space-y-4">
-						<h3 className="text-5xl font-black bg-clip-text bg-[var(--brand-gradient)]">
-							{compressions.length}
-						</h3>
-						<p className="text-[var(--color-black-300)] text-sm">
-							Total times history was compressed to save tokens
-						</p>
-					</div>
-
-					{compressions.length > 0 && (
-						<div className="mt-6 pt-6 border-t border-black-100">
-							<p className="text-xs text-black-400 mb-2 uppercase tracking-wider">
-								Latest Compression
-							</p>
-							<div className="text-sm">
-								Saved{" "}
-								<span className="text-blue-600 font-mono font-bold">
-									{compressions[0].messagesSummarized}
-								</span>{" "}
-								msgs
-								<br />
-								<span className="text-black-400">
-									{mounted
-										? compressions[0].createdAt
-											? new Date(
-													compressions[0].createdAt as string,
-												).toLocaleString()
-											: ""
-										: ""}
+				<ul className="space-y-2">
+					{credentials.map((cred) => (
+						<li
+							key={cred.id}
+							className="flex justify-between items-center p-3 bg-gray-50 rounded border"
+						>
+							<div>
+								<span className="font-medium capitalize">{cred.surface}</span>
+								<span className="text-sm text-gray-500 ml-4 border-l pl-4 border-gray-300">
+									Added: {new Date(cred.createdAt).toLocaleDateString()}
 								</span>
 							</div>
-						</div>
+							<button
+								type="button"
+								onClick={() => handleDeleteCredential(cred.surface)}
+								className="text-red-500 hover:text-red-700"
+							>
+								Delete
+							</button>
+						</li>
+					))}
+					{credentials.length === 0 && (
+						<li className="text-gray-500 italic">No credentials added yet.</li>
 					)}
-				</div>
-			</div>
+				</ul>
+			</section>
 
-			{/* Recent Conversations */}
-			<div className="scotty-card p-6">
-				<h2 className="text-xl font-bold mb-6 flex items-center justify-between">
-					Recent Conversations
-					<Link
-						to="/dashboard/conversations"
-						className="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 font-bold"
-					>
-						View All &rarr;
-					</Link>
-				</h2>
-				<div className="overflow-x-auto">
-					<table className="w-full text-left border-collapse">
-						<thead>
-							<tr className="border-b border-black-100 text-black-400 text-sm">
-								<th className="py-3 px-4 font-medium">User</th>
-								<th className="py-3 px-4 font-medium">Messages</th>
-								<th className="py-3 px-4 font-medium hidden sm:table-cell">
-									Created
-								</th>
-								<th className="py-3 px-4 font-medium">Last Active</th>
-							</tr>
-						</thead>
-						<tbody>
-							{recentConversations.map((conv) => (
-								<tr
-									key={conv.id}
-									className="border-b border-black-100 hover:bg-black-50 transition-colors group"
-								>
-									<td className="py-3 px-4">
-										<Link to="/dashboard/conversations" className="block">
-											<div className="font-bold group-hover:text-blue-600 transition-colors text-black-900">
-												{conv.userName || conv.userEmail || "Anonymous"}
-											</div>
-											<div className="text-xs text-black-400 font-mono mt-1">
-												{conv.id.substring(0, 8)}...
-											</div>
-										</Link>
-									</td>
-									<td className="py-3 px-4 whitespace-nowrap">
-										<span className="inline-flex items-center justify-center bg-blue-50 text-blue-600 rounded-full px-2.5 py-0.5 text-xs font-bold">
-											{conv.messageCount}
-										</span>
-									</td>
-									<td className="py-3 px-4 text-black-400 text-sm hidden sm:table-cell">
-										{mounted
-											? new Date(conv.createdAt).toLocaleDateString()
-											: ""}
-									</td>
-									<td className="py-3 px-4 text-black-400 text-sm">
-										{mounted
-											? conv.lastActive
-												? new Date(conv.lastActive).toLocaleString()
-												: "N/A"
-											: ""}
-									</td>
+			{/* Admin Users Section */}
+			{users.length > 0 && (
+				<section className="bg-white p-6 rounded-lg shadow border border-gray-200">
+					<h2 className="text-2xl font-semibold mb-4">
+						User Management (Admin)
+					</h2>
+					<div className="overflow-x-auto">
+						<table className="min-w-full text-left">
+							<thead>
+								<tr className="border-b">
+									<th className="pb-3">Name</th>
+									<th className="pb-3">Email</th>
+									<th className="pb-3">Roles</th>
+									<th className="pb-3">Actions</th>
 								</tr>
-							))}
-							{recentConversations.length === 0 && (
-								<tr>
-									<td
-										colSpan={4}
-										className="py-8 text-center text-black-400 italic"
+							</thead>
+							<tbody>
+								{users.map((u) => (
+									<tr
+										key={u.id}
+										className="border-b last:border-0 hover:bg-gray-50"
 									>
-										No conversations found.
-									</td>
-								</tr>
-							)}
-						</tbody>
-					</table>
-				</div>
-			</div>
+										<td className="py-3">{u.name}</td>
+										<td className="py-3 text-gray-600">{u.email}</td>
+										<td className="py-3">
+											<div className="flex gap-1 flex-wrap">
+												{u.roles?.map((r: string) => (
+													<span
+														key={r}
+														className="bg-gray-200 px-2 py-1 rounded text-xs flex items-center gap-1"
+													>
+														{r}
+														<button
+															type="button"
+															onClick={() => handleRevokeRole(u.id, r)}
+															className="text-red-500 ml-1 hover:text-red-700 font-bold"
+														>
+															×
+														</button>
+													</span>
+												))}
+											</div>
+										</td>
+										<td className="py-3">
+											<select
+												className="border rounded p-1 text-sm bg-white"
+												onChange={(e) => {
+													handleAssignRole(u.id, e.target.value);
+													e.target.value = ""; // Reset
+												}}
+												defaultValue=""
+											>
+												<option value="" disabled>
+													Add Role...
+												</option>
+												<option value="admin">Admin</option>
+												<option value="user">User</option>
+											</select>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</section>
+			)}
 		</div>
 	);
 }

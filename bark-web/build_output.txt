@@ -1,0 +1,77 @@
+$ vite build
+vite v7.3.1 building client environment for production...
+transforming...
+
+[@tanstack/devtools-vite] Removed devtools code from: /src/routes/__root.tsx
+
+Found 1 warning while optimizing generated CSS:
+
+[2m│ }[22m
+[2m│ @layer base {[22m
+[2m│[22m   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+[2m┆[22m          [33m[2m^--[22m Unknown at rule: @import[39m
+[2m┆[22m
+[2m│   :root {[22m
+[2m│     --brand-gradient: linear-gradient(90deg, #ff004e 0%, #4f2485 54%, #40d2fc 100%);[22m
+
+[plugin vite:resolve] Module "util" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/client.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "net" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/connection.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "util" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/utils.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "path" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pgpass@1.0.5/node_modules/pgpass/lib/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "fs" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pgpass@1.0.5/node_modules/pgpass/lib/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "net" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/stream.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "tls" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/stream.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "util" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/native/client.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "dns" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/connection-parameters.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "crypto" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/crypto/utils-webcrypto.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "crypto" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/crypto/utils-legacy.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "util" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg@8.20.0+52bd52a0bccfa6a2/node_modules/pg/lib/native/query.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "path" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pgpass@1.0.5/node_modules/pgpass/lib/helper.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "stream" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pgpass@1.0.5/node_modules/pgpass/lib/helper.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "util" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pgpass@1.0.5/node_modules/pgpass/lib/helper.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "fs" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/pg-connection-string@2.12.0/node_modules/pg-connection-string/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "node:async_hooks" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/@tanstack+start-server-core@1.166.7+14047587bf013dd6/node_modules/@tanstack/start-server-core/dist/esm/request-response.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "stream" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/split2@4.2.0/node_modules/split2/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "node:stream/web" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/@tanstack+router-core@1.166.7/node_modules/@tanstack/router-core/dist/esm/ssr/transformStreamWithRouter.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "node:stream" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/@tanstack+router-core@1.166.7/node_modules/@tanstack/router-core/dist/esm/ssr/transformStreamWithRouter.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "node:stream" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/@tanstack+react-router@1.166.7+bf16f8eded5e12ee/node_modules/@tanstack/react-router/dist/esm/ssr/renderRouterToStream.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "node:async_hooks" has been externalized for browser compatibility, imported by "/Users/tsumacpro/BarkPack/node_modules/.bun/@tanstack+start-storage-context@1.166.7/node_modules/@tanstack/start-storage-context/dist/esm/async-local-storage.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+✓ 2896 modules transformed.
+✗ Build failed in 2.83s
+error during build:
+src/data/credentials.ts (1:9): "createServerFn" is not exported by "../node_modules/.bun/@tanstack+start@1.120.20+54cc4ba6fc08db73/node_modules/@tanstack/start/dist/esm/client.js", imported by "src/data/credentials.ts".
+file: /Users/tsumacpro/BarkPack/bark-web/src/data/credentials.ts:1:9
+
+1: import { createServerFn } from "@tanstack/start";
+            ^
+2: import { db } from "../db";
+3: import { surfaceCredentials } from "../db/drizzle/schema";
+
+    at getRollupError (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+    at error (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+    at Module.error (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:17040:16)
+    at Module.traceVariable (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:17452:29)
+    at ModuleScope.findVariable (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:15070:39)
+    at Identifier.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:5447:40)
+    at CallExpression.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at CallExpression.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:12179:15)
+    at MemberExpression.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at MemberExpression.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:7407:19)
+    at CallExpression.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at CallExpression.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:12179:15)
+    at VariableDeclarator.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at VariableDeclaration.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at ExportNamedDeclaration.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:12702:27)
+    at Program.bind (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at Module.bindReferences (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:17019:18)
+    at Graph.sortAndBindModules (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:22866:20)
+    at Graph.build (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:22764:14)
+    at async file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:23455:13
+    at async catchUnfinishedHookActions (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:22925:16)
+    at async rollupInternal (file:///Users/tsumacpro/BarkPack/node_modules/.bun/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:23450:5)
+    at async buildEnvironment (file:///Users/tsumacpro/BarkPack/node_modules/.bun/vite@7.3.1+fd9a63c967dde141/node_modules/vite/dist/node/chunks/config.js:33541:12)
+    at async Object.build (file:///Users/tsumacpro/BarkPack/node_modules/.bun/vite@7.3.1+fd9a63c967dde141/node_modules/vite/dist/node/chunks/config.js:33900:19)
+    at async Object.buildApp (file:///Users/tsumacpro/BarkPack/node_modules/.bun/@tanstack+start-plugin-core@1.166.8+4b4900ffd2c540db/node_modules/@tanstack/start-plugin-core/dist/esm/plugin.js:260:17)
+    at async Object.buildApp (file:///Users/tsumacpro/BarkPack/node_modules/.bun/vite@7.3.1+fd9a63c967dde141/node_modules/vite/dist/node/chunks/config.js:33892:6)
+    at async CAC.<anonymous> (file:///Users/tsumacpro/BarkPack/node_modules/.bun/vite@7.3.1+fd9a63c967dde141/node_modules/vite/dist/node/cli.js:629:3)
+error: script "build" exited with code 1

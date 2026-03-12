@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+
 
 @theme {
   --color-black-50: hsl(0, 0%, 97%);
@@ -18,8 +20,6 @@
 }
 
 @layer base {
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
   :root {
     --brand-gradient: linear-gradient(90deg, #ff004e 0%, #4f2485 54%, #40d2fc 100%);
   }

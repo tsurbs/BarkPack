@@ -32,6 +32,7 @@ from app.tools.image_tools import GenerateImageTool
 from app.tools.pdf_tools import GeneratePDFTool, GeneratePDFWithURLTool
 from app.tools.slack_tools import SendSlackMessageTool, ListSlackChannelsTool
 from app.tools.attachment_tools import AttachFileTool
+from app.tools.news_tools import SearchNewsTool, GetTopHeadlinesTool
 from app.tools.coding.sandbox_bash import SandboxBashTool
 from app.tools.coding.sandbox_read import SandboxReadTool
 from app.tools.coding.sandbox_write import SandboxWriteTool
@@ -65,6 +66,7 @@ NATIVE_TOOLS = {
         ReadGoogleSheetTool(), SubscribeWorkspaceEventsTool(), ManageCloudIdentityGroupsTool(),
         UploadToS3Tool(), ListS3BucketTool(), SendSlackMessageTool(),
         ListSlackChannelsTool(), AttachFileTool(), GenerateImageTool(),
+        SearchNewsTool(), GetTopHeadlinesTool(),
         GeneratePDFTool(), GeneratePDFWithURLTool(),
         SandboxBashTool(), SandboxReadTool(), SandboxWriteTool(), SandboxEditTool(),
         SandboxGlobTool(), SandboxGrepTool(), SandboxListTool(), SandboxGitStatusTool(),

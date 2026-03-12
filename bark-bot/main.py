@@ -7,6 +7,7 @@ from app.surfaces.web import router as web_router
 from app.surfaces.slack import router as slack_router
 from app.api.tools import router as tools_router
 from app.api.agents import router as agents_router
+from app.api.dashboard import router as dashboard_router
 from app.core.orchestrator import ensure_agents_initialized
 from app.db.session import engine
 
@@ -65,6 +66,7 @@ app.include_router(web_router)
 app.include_router(slack_router)
 app.include_router(tools_router)
 app.include_router(agents_router)
+app.include_router(dashboard_router)
 
 @app.get("/health")
 async def health_check():
